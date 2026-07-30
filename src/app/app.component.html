@@ -1,0 +1,234 @@
+<main class="booking-page">
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Centro Ecuestre Martínez Luna">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M17 47c1-15 8-28 20-36 1 6 7 7 10 13 4 7 0 15-8 17-6 2-11-1-15-6" />
+        <path d="M24 17c-4 0-8 2-11 7" />
+        <path d="M39 23h.1" />
+      </svg>
+      <span>Centro Ecuestre<br><strong>Martínez Luna</strong></span>
+    </a>
+
+    <nav class="nav" aria-label="Principal">
+      <a *ngFor="let item of navItems" href="#">{{ item }}</a>
+    </nav>
+
+    <div class="top-actions">
+      <button class="history-action" type="button" (click)="openHistoryModal()">Histórico</button>
+      <a class="outline-action" href="#booking">Reservar experiencia</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Centro Ecuestre Martínez Luna</p>
+      <h1>Reserva tu <span>experiencia</span></h1>
+      <p class="intro">
+        Rutas a caballo entre olivos y senderos de tierra, y clases de equitación adaptadas a tu nivel.
+        Elige tu opción y asegura tu plaza.
+      </p>
+      <a class="primary-action" href="#booking">Reserva ahora <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="hero-image" aria-hidden="true"></div>
+  </section>
+
+  <section class="booking" id="booking">
+    <div class="experience-column">
+      <div class="tabs" role="tablist" aria-label="Tipo de reserva">
+        <button type="button" [class.active]="activeType === 'routes'" (click)="setType('routes')">Rutas a caballo</button>
+        <button type="button" [class.active]="activeType === 'lessons'" (click)="setType('lessons')">Clases de equitación</button>
+      </div>
+
+      <article
+        *ngFor="let experience of filteredExperiences"
+        class="experience-card"
+        [class.selected]="selectedExperienceIds.includes(experience.id)"
+        (click)="selectExperience(experience.id)"
+      >
+        <img [src]="experience.image" [alt]="experience.title">
+        <div class="experience-info">
+          <h2>{{ experience.title }}</h2>
+          <p>{{ experience.description }}</p>
+          <div class="meta">
+            <span>{{ experience.level }}</span>
+            <span>{{ experience.duration }}</span>
+          </div>
+        </div>
+        <button type="button" class="price" (click)="selectExperience(experience.id); $event.stopPropagation()">
+          <ng-container *ngIf="!isLesson; else bonusLabel">{{ experience.price }} €</ng-container>
+          <ng-template #bonusLabel>Bono</ng-template>
+          <span aria-hidden="true">›</span>
+        </button>
+        <span class="corner" *ngIf="selectedExperienceIds.includes(experience.id)" aria-hidden="true">✓</span>
+      </article>
+
+      <p class="availability">Puedes seleccionar varias opciones dentro de la misma categoría.</p>
+    </div>
+
+    <div class="calendar-column">
+      <h2 class="section-title"><span aria-hidden="true">▦</span> Elige la fecha</h2>
+      <div class="month-switcher">
+        <button type="button" aria-label="Mes anterior" [disabled]="!canGoPreviousMonth" (click)="changeMonth(-1)">‹</button>
+        <strong>{{ monthLabel }}</strong>
+        <button type="button" aria-label="Mes siguiente" [disabled]="!canGoNextMonth" (click)="changeMonth(1)">›</button>
+      </div>
+
+      <div class="calendar-grid">
+        <span class="weekday" *ngFor="let day of weekDays">{{ day }}</span>
+        <button
+          type="button"
+          *ngFor="let day of calendar"
+          [class.empty]="!day.day"
+          [class.disabled]="day.disabled"
+          [class.active]="day.date && day.date.getTime() === selectedDate.getTime()"
+          [class.today]="day.today"
+          [disabled]="day.disabled"
+          (click)="selectDay(day)"
+        >
+          {{ day.day || '' }}
+        </button>
+      </div>
+
+      <div class="date-line">
+        <strong>{{ formattedDate }}</strong>
+      </div>
+
+      <div class="time-section">
+        <h2 class="section-title"><span aria-hidden="true">◷</span> Elige la hora</h2>
+        <div class="hours">
+          <button
+            type="button"
+            *ngFor="let hour of hours"
+            [class.active]="hour === selectedHour"
+            (click)="selectHour(hour)"
+          >
+            {{ hour }}
+          </button>
+        </div>
+        <p>Plazas limitadas. La ocupación de clases se gestiona de forma privada.</p>
+      </div>
+    </div>
+
+    <aside class="summary-column">
+      <h2 class="section-title"><span aria-hidden="true">♙</span> Bonos</h2>
+      <div class="bonus-box always-visible" [class.empty]="lessonBonuses === 0">
+        <span>Total de bonos disponibles</span>
+        <strong>{{ lessonBonuses }}</strong>
+      </div>
+      <p class="limit-note">Los bonos se descuentan solo al reservar clases.</p>
+
+      <label>
+        Nombre completo
+        <input type="text" [(ngModel)]="customerName">
+      </label>
+
+      <label>
+        Teléfono
+        <input type="tel" [(ngModel)]="phone">
+      </label>
+
+      <div class="summary">
+        <h2>Resumen de tu reserva</h2>
+        <dl>
+          <div>
+            <dt>{{ summarySelectionLabel }}</dt>
+            <dd>
+              <span class="selection-line" *ngFor="let experience of selectedExperiences">{{ experience.title }}</span>
+              <span class="selection-empty" *ngIf="selectedExperiences.length === 0">Sin selección</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Fecha</dt>
+            <dd>{{ formattedDate }}</dd>
+          </div>
+          <div>
+            <dt>Hora</dt>
+            <dd>{{ selectedHour }}</dd>
+          </div>
+          <div *ngIf="isLesson && selectedExperiences.length > 0">
+            <dt>Pago</dt>
+            <dd>{{ selectedExperiences.length }} bono{{ selectedExperiences.length === 1 ? '' : 's' }}</dd>
+          </div>
+        </dl>
+        <div class="total" *ngIf="!isLesson && selectedExperiences.length > 0">
+          <span>Total</span>
+          <strong>{{ total | number:'1.2-2' }} €</strong>
+        </div>
+        <div class="total bonus-total" *ngIf="isLesson && selectedExperiences.length > 0">
+          <span>Bonos tras reservar</span>
+          <strong>{{ lessonBonuses >= selectedExperiences.length ? lessonBonuses - selectedExperiences.length : 0 }}</strong>
+        </div>
+        <p class="selection-help" *ngIf="selectedExperiences.length === 0">Marca una o varias opciones para continuar.</p>
+      </div>
+
+      <button class="pay-button" type="button" [disabled]="!canReserve" (click)="reserve()">
+        {{ actionLabel }} <span aria-hidden="true">→</span>
+      </button>
+      <button class="buy-button" type="button" (click)="openBonusModal()">Comprar más bonos</button>
+      <p class="secure">{{ actionHelpText }}</p>
+      <p class="warning" *ngIf="warning">{{ warning }}</p>
+      <p class="confirmation" *ngIf="confirmation">{{ confirmation }}</p>
+
+    </aside>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="isBonusModalOpen" (click)="closeBonusModal()">
+    <section class="bonus-modal" role="dialog" aria-modal="true" aria-labelledby="bonus-modal-title" (click)="$event.stopPropagation()">
+      <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeBonusModal()">×</button>
+      <p class="eyebrow modal-eyebrow">Bonos de clases</p>
+      <h2 id="bonus-modal-title">Comprar bonos</h2>
+      <p class="modal-copy">Elige un paquete. Los bonos se añaden al momento y podrás reservar clases con ellos.</p>
+      <div class="bonus-pack-grid">
+        <button type="button" *ngFor="let pack of bonusPacks" (click)="purchaseBonuses(pack)">
+          <strong>{{ pack.amount }}</strong>
+          <span>{{ pack.amount === 1 ? 'bono' : 'bonos' }}</span>
+          <em>{{ pack.price }} €</em>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="isReservationModalOpen" (click)="closeReservationModal()">
+    <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="reservation-modal-title" (click)="$event.stopPropagation()">
+      <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeReservationModal()">×</button>
+      <p class="eyebrow modal-eyebrow">Reserva confirmada</p>
+      <h2 id="reservation-modal-title">{{ reservationMessage }}</h2>
+      <dl class="reservation-details">
+        <div>
+          <dt>{{ summarySelectionLabel }}</dt>
+          <dd>
+            <span class="selection-line" *ngFor="let experience of selectedExperiences">{{ experience.title }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Fecha</dt>
+          <dd>{{ formattedDate }}</dd>
+        </div>
+        <div>
+          <dt>Hora</dt>
+          <dd>{{ selectedHour }}</dd>
+        </div>
+      </dl>
+      <button class="pay-button modal-action" type="button" (click)="closeReservationModal()">Aceptar</button>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="isHistoryModalOpen" (click)="closeHistoryModal()">
+    <section class="history-modal" role="dialog" aria-modal="true" aria-labelledby="history-modal-title" (click)="$event.stopPropagation()">
+      <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeHistoryModal()">×</button>
+      <p class="eyebrow modal-eyebrow">Mis reservas</p>
+      <h2 id="history-modal-title">Histórico de reservas</h2>
+      <p class="history-empty" *ngIf="bookingHistory.length === 0">Todavía no tienes reservas.</p>
+      <div class="history-list" *ngIf="bookingHistory.length > 0">
+        <article class="history-item" *ngFor="let booking of bookingHistory">
+          <div>
+            <strong>{{ booking.title }}</strong>
+            <span>{{ booking.type === 'lessons' ? 'Clase' : 'Ruta' }} · {{ booking.date }}</span>
+            <span>{{ booking.hour }} · {{ booking.payment }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+  </div>
+
+</main>
