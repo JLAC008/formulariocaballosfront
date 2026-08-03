@@ -926,3 +926,460 @@ dd {
   }
 
 }
+
+.auth-page,
+.admin-page {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(253, 248, 240, 0.96), rgba(248, 239, 228, 0.96)),
+    url("/assets/hero-rider.jpg") center / cover;
+}
+
+.auth-page {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  background: rgba(255, 250, 243, 0.96);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 70px rgba(47, 38, 31, 0.18);
+  max-width: 430px;
+  padding: 34px;
+  width: 100%;
+}
+
+.auth-card h1,
+.admin-topbar h1,
+.admin-section h2,
+.experience-modal h2 {
+  color: #2f261f;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0;
+}
+
+.auth-card h1 {
+  font-size: 44px;
+  margin-bottom: 12px;
+}
+
+.auth-copy,
+.demo-note,
+.section-actions p {
+  color: #756b62;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: grid;
+  gap: 13px;
+  margin-top: 24px;
+}
+
+.back-link {
+  background: transparent;
+  border: 0;
+  color: var(--gold-deep);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  margin: 0 0 18px;
+  padding: 0;
+  text-transform: uppercase;
+}
+
+.admin-page {
+  padding: 26px;
+}
+
+.admin-topbar {
+  align-items: center;
+  background: rgba(255, 250, 243, 0.94);
+  border: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  margin: 0 auto 18px;
+  max-width: 1320px;
+  padding: 22px 24px;
+}
+
+.admin-topbar h1 {
+  font-size: 42px;
+}
+
+.admin-actions,
+.section-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.admin-kpis {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0 auto 18px;
+  max-width: 1320px;
+}
+
+.admin-kpis article,
+.stats-grid article {
+  background: rgba(255, 250, 243, 0.92);
+  border: 1px solid var(--line);
+  padding: 18px;
+}
+
+.admin-kpis span,
+.stats-grid span {
+  color: #7d736a;
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.admin-kpis strong,
+.stats-grid strong {
+  color: var(--gold);
+  display: block;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.admin-tabs {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 22px;
+  margin: 0 auto 18px;
+  max-width: 1320px;
+}
+
+.admin-tabs button {
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: #6a625b;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  min-height: 44px;
+  padding: 0 4px;
+  text-transform: uppercase;
+}
+
+.admin-tabs button.active {
+  border-bottom-color: var(--gold);
+  color: var(--gold-deep);
+}
+
+.admin-section {
+  background: rgba(255, 250, 243, 0.95);
+  border: 1px solid var(--line);
+  margin: 0 auto;
+  max-width: 1320px;
+  padding: 24px;
+}
+
+.admin-section h2 {
+  font-size: 34px;
+  margin-bottom: 8px;
+}
+
+.section-actions {
+  margin-bottom: 20px;
+}
+
+.section-actions input,
+.section-actions select,
+.admin-table select,
+.experience-form select {
+  background: rgba(255, 252, 247, 0.86);
+  border: 1px solid var(--line);
+  color: #62564c;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.compact-action {
+  max-width: 210px;
+}
+
+.schedule-board {
+  border: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 110px 1fr;
+}
+
+.schedule-hours {
+  background: rgba(184, 134, 35, 0.08);
+  border-right: 1px solid var(--line);
+  display: grid;
+}
+
+.schedule-hours span {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  color: #7b6c5f;
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 54px;
+  padding: 0 16px;
+}
+
+.schedule-list {
+  display: grid;
+  gap: 10px;
+  min-height: 226px;
+  padding: 14px;
+}
+
+.schedule-booking-card {
+  background: rgba(255, 252, 247, 0.86);
+  border: 1px solid rgba(184, 134, 35, 0.3);
+  border-left: 4px solid var(--gold);
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+}
+
+.schedule-booking-card.lesson {
+  border-left-color: #6c532a;
+}
+
+.schedule-booking-card strong,
+.schedule-booking-card span,
+.schedule-booking-card em {
+  color: #554a42;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.schedule-booking-card strong {
+  color: #2f261f;
+  font-size: 15px;
+}
+
+.admin-card-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-experience-card {
+  align-items: center;
+  background: rgba(255, 252, 247, 0.78);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: 132px 1fr auto;
+  padding: 10px;
+}
+
+.admin-experience-card img {
+  height: 92px;
+  object-fit: cover;
+  width: 132px;
+}
+
+.admin-experience-card h3 {
+  color: #2f261f;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 5px 0;
+}
+
+.admin-experience-card p {
+  color: #6f675f;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.type-pill {
+  background: rgba(184, 134, 35, 0.12);
+  color: var(--gold-deep);
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  padding: 5px 8px;
+  text-transform: uppercase;
+}
+
+.admin-card-meta {
+  color: #80766d;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.admin-card-meta strong {
+  color: var(--gold-deep);
+}
+
+.admin-card-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  border-collapse: collapse;
+  min-width: 860px;
+  width: 100%;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid var(--line);
+  color: #5f564f;
+  font-size: 12px;
+  padding: 13px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: #8a7d70;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+.admin-table td strong,
+.admin-table td span {
+  display: block;
+}
+
+.admin-table td span {
+  color: #867c73;
+  margin-top: 4px;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.stats-grid article:last-child strong {
+  color: #4b3a2e;
+  font-size: 26px;
+}
+
+.experience-modal {
+  background: #fffaf3;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 70px rgba(47, 38, 31, 0.22);
+  max-height: min(88vh, 760px);
+  max-width: 620px;
+  overflow: auto;
+  padding: 30px;
+  position: relative;
+  width: min(100%, 620px);
+}
+
+.experience-modal h2 {
+  font-size: 36px;
+  margin-bottom: 18px;
+}
+
+.experience-form {
+  display: grid;
+  gap: 12px;
+}
+
+.experience-form textarea {
+  min-height: 96px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.check-line {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.check-line input {
+  height: auto;
+  margin: 0;
+  width: auto;
+}
+
+@media (max-width: 900px) {
+  .admin-page {
+    padding: 16px;
+  }
+
+  .admin-topbar,
+  .admin-actions,
+  .section-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-kpis,
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-tabs {
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .admin-experience-card {
+    grid-template-columns: 96px 1fr;
+  }
+
+  .admin-experience-card img {
+    height: 100%;
+    width: 96px;
+  }
+
+  .admin-card-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-kpis,
+  .stats-grid,
+  .schedule-board {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-hours {
+    display: none;
+  }
+}
