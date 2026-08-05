@@ -832,37 +832,6 @@ export class AppComponent {
     this.persistBookings();
   }
 
-  createAdminReservation(): void {
-    const reservationOption = this.experiences
-      .filter((experience) => experience.active)
-      .map((experience) => ({
-        experience,
-        hour: this.getExperienceHours(experience).find((hour) => !this.isSlotFull(experience, this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour))
-      }))
-      .find((option) => option.hour);
-
-    if (!reservationOption || !reservationOption.hour) {
-      return;
-    }
-
-    this.bookingHistory = [{
-      id: Date.now(),
-      userId: null,
-      experienceId: reservationOption.experience.id,
-      type: reservationOption.experience.type,
-      title: reservationOption.experience.title,
-      date: this.formatDateFromKey(this.adminDate),
-      dateKey: this.adminDate,
-      hour: reservationOption.hour,
-      payment: '1 bono',
-      customerName: 'Reserva mostrador',
-      phone: '600 000 000',
-      amount: 0,
-      status: 'CONFIRMED'
-    }, ...this.bookingHistory];
-    this.persistBookings();
-  }
-
   getTypeLabel(type: BookingType): string {
     return 'Clase';
   }

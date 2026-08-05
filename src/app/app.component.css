@@ -1193,11 +1193,6 @@ dd {
   justify-content: space-between;
 }
 
-.quick-reservation-action {
-  margin-top: 0;
-  max-width: 190px;
-}
-
 .admin-kpis {
   display: grid;
   gap: 14px;
