@@ -350,6 +350,7 @@
 
 .month-switcher button:disabled,
 .calendar-grid button:disabled,
+.hours button:disabled,
 .people-control button:disabled,
 .pay-button:disabled {
   cursor: not-allowed;

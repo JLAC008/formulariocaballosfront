@@ -78,6 +78,7 @@ const CUSTOMER_SESSION_KEY = 'centro_ecuestre_customer_session';
 const USERS_KEY = 'centro_ecuestre_users';
 const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
+const MAX_BOOKINGS_PER_SLOT = 5;
 
 @Component({
   selector: 'app-root',
@@ -205,7 +206,24 @@ export class AppComponent {
   }
 
   get canReserve(): boolean {
-    return this.selectedExperiences.length > 0 && this.currentUser !== null && this.lessonBonuses >= this.selectedExperiences.length;
+    return this.selectedExperiences.length > 0
+      && this.currentUser !== null
+      && this.lessonBonuses >= this.selectedExperiences.length
+      && !this.hasCurrentUserBookedSelectedSlot
+      && !this.isSelectedSlotFull
+      && !this.isSelectedSlotPast;
+  }
+
+  get hasCurrentUserBookedSelectedSlot(): boolean {
+    return this.hasCurrentUserBookedSlot(this.toDateKey(this.selectedDate), this.selectedHour);
+  }
+
+  get isSelectedSlotFull(): boolean {
+    return this.isSlotFull(this.toDateKey(this.selectedDate), this.selectedHour);
+  }
+
+  get isSelectedSlotPast(): boolean {
+    return this.isSlotPast(this.toDateKey(this.selectedDate), this.selectedHour);
   }
 
   get visibleHistory(): BookingHistoryItem[] {
@@ -405,6 +423,24 @@ export class AppComponent {
       return;
     }
 
+    if (this.isSelectedSlotPast) {
+      this.warning = 'Esta hora ya ha pasado. Elige otra hora disponible.';
+      this.confirmation = '';
+      return;
+    }
+
+    if (this.hasCurrentUserBookedSelectedSlot) {
+      this.warning = 'Ya tienes una reserva para esa hora y ese dia. Elige otra hora disponible.';
+      this.confirmation = '';
+      return;
+    }
+
+    if (this.isSelectedSlotFull) {
+      this.warning = 'Esta hora ya tiene 5 reservas. Elige otra hora disponible.';
+      this.confirmation = '';
+      return;
+    }
+
     this.updateCurrentUserBonuses(-selectedCount);
 
     const customer = this.currentUser;
@@ -527,7 +563,8 @@ export class AppComponent {
 
   createAdminReservation(): void {
     const firstActive = this.experiences.find((experience) => experience.active);
-    if (!firstActive) {
+    const availableHour = this.hours.find((hour) => !this.isSlotFull(this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour));
+    if (!firstActive || !availableHour) {
       return;
     }
 
@@ -538,7 +575,7 @@ export class AppComponent {
       title: firstActive.title,
       date: this.formatDateFromKey(this.adminDate),
       dateKey: this.adminDate,
-      hour: '11:30',
+      hour: availableHour,
       payment: '1 bono',
       customerName: 'Reserva mostrador',
       phone: '600 000 000',
@@ -650,6 +687,42 @@ export class AppComponent {
 
   private getBookingDateTime(booking: BookingHistoryItem): Date {
     return new Date(`${booking.dateKey}T${booking.hour}:00`);
+  }
+
+  isHourBooked(hour: string): boolean {
+    const dateKey = this.toDateKey(this.selectedDate);
+    return this.isSlotFull(dateKey, hour) || this.isSlotPast(dateKey, hour);
+  }
+
+  private hasCurrentUserBookedSlot(dateKey: string, hour: string): boolean {
+    if (!this.currentUserId) {
+      return false;
+    }
+
+    return this.bookingHistory.some((booking) =>
+      booking.dateKey === dateKey
+      && booking.hour === hour
+      && booking.userId === this.currentUserId
+      && booking.status !== 'CANCELLED'
+      && this.isBookingReminderActive(booking)
+    );
+  }
+
+  private isSlotFull(dateKey: string, hour: string): boolean {
+    return this.getSlotBookingsCount(dateKey, hour) >= MAX_BOOKINGS_PER_SLOT;
+  }
+
+  private getSlotBookingsCount(dateKey: string, hour: string): number {
+    return this.bookingHistory.filter((booking) =>
+      booking.dateKey === dateKey
+      && booking.hour === hour
+      && booking.status !== 'CANCELLED'
+      && this.isBookingReminderActive(booking)
+    ).length;
+  }
+
+  private isSlotPast(dateKey: string, hour: string): boolean {
+    return new Date(`${dateKey}T${hour}:00`) <= new Date();
   }
 
   private loadFromStorage<T>(key: string, fallback: T): T {
