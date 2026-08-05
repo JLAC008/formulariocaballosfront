@@ -7,6 +7,7 @@ type AppView = 'client' | 'login' | 'admin';
 type AdminTab = 'schedule' | 'experiences' | 'reservations' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 type AuthMode = 'login' | 'register';
+type UserRole = 'guest' | 'customer' | 'admin';
 
 interface Experience {
   id: number;
@@ -155,6 +156,26 @@ export class AppComponent {
 
   get currentUser(): CustomerUser | null {
     return this.users.find((user) => user.id === this.currentUserId) || null;
+  }
+
+  get currentRole(): UserRole {
+    if (this.isAdminLoggedIn()) {
+      return 'admin';
+    }
+
+    return this.currentUser ? 'customer' : 'guest';
+  }
+
+  get isGuest(): boolean {
+    return this.currentRole === 'guest';
+  }
+
+  get isCustomer(): boolean {
+    return this.currentRole === 'customer';
+  }
+
+  get isAdmin(): boolean {
+    return this.currentRole === 'admin';
   }
 
   get lessonBonuses(): number {
@@ -419,6 +440,8 @@ export class AppComponent {
 
     if (email === 'admin' && this.loginPassword === 'admin') {
       localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      localStorage.removeItem(CUSTOMER_SESSION_KEY);
+      this.currentUserId = null;
       this.loginPassword = '';
       this.authError = '';
       this.showAdmin();
@@ -475,6 +498,15 @@ export class AppComponent {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     this.closeAccountMenu();
     this.showClient();
+  }
+
+  logoutCurrentSession(): void {
+    if (this.isAdmin) {
+      this.logout();
+      return;
+    }
+
+    this.logoutCustomer();
   }
 
   logoutCustomer(): void {
@@ -899,6 +931,7 @@ export class AppComponent {
   }
 
   private setCurrentUser(user: CustomerUser): void {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
     this.currentUserId = user.id;
     localStorage.setItem(CUSTOMER_SESSION_KEY, String(user.id));
     this.customerName = user.name;

@@ -15,13 +15,17 @@
       </svg>
     </button>
     <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
-      <ng-container *ngIf="currentUser; else guestAccountMenu">
+      <ng-container *ngIf="isCustomer">
         <button type="button" (click)="openHistoryModal()">Recordatorio</button>
-        <button type="button" (click)="logoutCustomer()">Cerrar sesion</button>
+        <button type="button" (click)="logoutCurrentSession()">Cerrar sesion</button>
       </ng-container>
-      <ng-template #guestAccountMenu>
+      <ng-container *ngIf="isAdmin">
+        <button type="button" (click)="showAdmin()">Panel administrador</button>
+        <button type="button" (click)="logoutCurrentSession()">Cerrar sesion</button>
+      </ng-container>
+      <ng-container *ngIf="isGuest">
         <button type="button" (click)="showLogin('login')">Iniciar sesion</button>
-      </ng-template>
+      </ng-container>
     </div>
   </div>
 </header>
@@ -224,12 +228,11 @@
             <div>
               <strong>{{ booking.title }}</strong>
               <span>{{ getTypeLabel(booking.type) }} · {{ booking.date }}</span>
-              <span>{{ booking.hour }} · {{ booking.payment }}</span>
-            </div>
-            <div class="history-status-row" [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">
-              <span class="status-dot" aria-hidden="true"></span>
-              <span>{{ getStatusLabel(booking.status) }}</span>
-              <em *ngIf="booking.status === 'CANCELLED'">Bonos devueltos</em>
+              <span class="history-meta-line">
+                {{ booking.hour }} · {{ booking.payment }}
+                <em [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">{{ getStatusLabel(booking.status) }}</em>
+                <small *ngIf="booking.status === 'CANCELLED'">Bonos devueltos</small>
+              </span>
             </div>
           </article>
         </div>

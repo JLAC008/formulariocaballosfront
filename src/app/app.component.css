@@ -949,38 +949,6 @@ dd {
   margin-bottom: 5px;
 }
 
-.history-status-row {
-  align-items: center;
-  display: flex;
-  gap: 7px;
-  margin-top: 9px;
-  min-height: 28px;
-  padding: 0 10px;
-}
-
-.history-status-row.cancelled {
-  background: rgba(138, 62, 43, 0.1);
-  color: #7a3f2c;
-}
-
-.history-status-row.confirmed {
-  background: rgba(184, 134, 35, 0.11);
-  color: var(--gold-deep);
-}
-
-.history-status-row em {
-  color: inherit;
-  font-size: 11px;
-  font-style: normal;
-  margin-left: auto;
-}
-
-.status-dot {
-  background: currentColor;
-  height: 6px;
-  width: 6px;
-}
-
 .history-item span {
   color: #6f675f;
   display: block;
@@ -988,14 +956,44 @@ dd {
   line-height: 1.45;
 }
 
-.history-item .history-status-row span {
-  color: inherit;
-  display: inline-flex;
+.history-meta-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.history-meta-line em {
   font-size: 10px;
+  font-style: normal;
   font-weight: 800;
-  letter-spacing: 1.1px;
-  line-height: 1;
+  letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+.history-meta-line em::before {
+  content: "·";
+  font-weight: 400;
+  margin-right: 7px;
+}
+
+.history-meta-line em.confirmed {
+  color: #80642a;
+}
+
+.history-meta-line em.cancelled,
+.history-meta-line small {
+  color: #7a3f2c;
+}
+
+.history-meta-line small {
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+.history-meta-line small::before {
+  content: "·";
+  margin-right: 8px;
 }
 
 @media (max-width: 1180px) {
@@ -1873,8 +1871,7 @@ textarea,
 .type-pill,
 .schedule-slot-time,
 .reservation-notice,
-.confirmation,
-.history-status-row.confirmed {
+.confirmation {
   background: #f6f1e9;
   border-color: #e3ddd4;
   color: #80642a;
@@ -1883,8 +1880,7 @@ textarea,
 .bonus-box.empty,
 .warning,
 .history-item.cancelled,
-.schedule-booking-card.cancelled,
-.history-status-row.cancelled {
+.schedule-booking-card.cancelled {
   background: #f8eeee;
   border-color: #d9b8b0;
   color: #7a3f2c;
