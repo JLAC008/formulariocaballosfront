@@ -1,7 +1,7 @@
 <header class="site-navbar">
-  <button class="site-brand" type="button" aria-label="Martinez Luna reservas" (click)="showClient()">
+  <a class="site-brand" href="https://martinezluna.es/" aria-label="Martinez Luna">
     <img src="assets/martinez-luna-logo.webp" alt="Martinez Luna">
-  </button>
+  </a>
 
   <nav class="site-nav" aria-label="Martinez Luna">
     <a *ngFor="let item of navItems" [href]="item.url">{{ item.label }}</a>

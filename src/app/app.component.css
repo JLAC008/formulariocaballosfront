@@ -21,11 +21,9 @@
 
 .site-brand {
   align-items: center;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
   display: inline-flex;
   padding: 0;
+  text-decoration: none;
 }
 
 .site-brand img {
