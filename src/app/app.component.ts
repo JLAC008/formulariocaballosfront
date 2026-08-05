@@ -18,6 +18,7 @@ interface Experience {
   price: number;
   image: string;
   active: boolean;
+  hours: string[];
 }
 
 interface CalendarDay {
@@ -90,7 +91,7 @@ const MAX_BOOKINGS_PER_SLOT = 5;
 export class AppComponent {
   readonly navItems = ['Inicio', 'Clases de equitacion', 'Sobre nosotros', 'Contacto'];
   readonly weekDays = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-  readonly hours = ['09:00', '11:30', '17:00', '18:30'];
+  readonly hours = ['11:00', '18:00', '18:45', '19:30'];
   readonly bonusPacks: BonusPack[] = [
     { amount: 10, price: 160 }
   ];
@@ -108,7 +109,7 @@ export class AppComponent {
   visibleMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
   selectedDate = new Date(this.minDate);
   adminDate = this.toDateKey(this.minDate);
-  selectedHour = '18:30';
+  selectedHour = '18:00';
   currentUserId: number | null = this.getStoredCustomerId();
   isBonusModalOpen = false;
   isReservationModalOpen = false;
@@ -127,6 +128,7 @@ export class AppComponent {
   reservationFilter: 'all' | ReservationStatus = 'all';
   editingExperience: Experience | null = null;
   experienceForm: Experience = this.blankExperience();
+  customExperienceHour = '';
 
   get currentUser(): CustomerUser | null {
     return this.users.find((user) => user.id === this.currentUserId) || null;
@@ -146,6 +148,29 @@ export class AppComponent {
 
   get selectedExperienceTitle(): string {
     return this.selectedExperiences.map((experience) => experience.title).join(', ');
+  }
+
+  get availableHours(): string[] {
+    if (this.selectedExperiences.length > 0) {
+      return this.getExperienceHours(this.selectedExperiences[0]);
+    }
+
+    return this.sortHours([
+      ...this.hours,
+      ...this.filteredExperiences.flatMap((experience) => this.getExperienceHours(experience))
+    ]);
+  }
+
+  get adminScheduleHours(): string[] {
+    return this.sortHours([
+      ...this.hours,
+      ...this.experiences.flatMap((experience) => this.getExperienceHours(experience)),
+      ...this.adminDayReservations.map((booking) => booking.hour)
+    ]);
+  }
+
+  get editableExperienceHours(): string[] {
+    return this.sortHours([...this.hours, ...this.getExperienceFormHours()]);
   }
 
   get monthLabel(): string {
@@ -194,7 +219,7 @@ export class AppComponent {
   }
 
   get summarySelectionLabel(): string {
-    return `Clases seleccionadas (${this.selectedExperiences.length})`;
+    return this.selectedExperiences.length === 1 ? 'Clase seleccionada' : 'Clase seleccionada (0)';
   }
 
   get actionLabel(): string {
@@ -209,9 +234,14 @@ export class AppComponent {
     return this.selectedExperiences.length > 0
       && this.currentUser !== null
       && this.lessonBonuses >= this.selectedExperiences.length
+      && this.isSelectedHourAvailable
       && !this.hasCurrentUserBookedSelectedSlot
       && !this.isSelectedSlotFull
       && !this.isSelectedSlotPast;
+  }
+
+  get isSelectedHourAvailable(): boolean {
+    return this.availableHours.includes(this.selectedHour);
   }
 
   get hasCurrentUserBookedSelectedSlot(): boolean {
@@ -366,10 +396,11 @@ export class AppComponent {
 
   selectExperience(id: number): void {
     if (this.selectedExperienceIds.includes(id)) {
-      this.selectedExperienceIds = this.selectedExperienceIds.filter((selectedId) => selectedId !== id);
+      this.selectedExperienceIds = [];
     } else {
-      this.selectedExperienceIds = [...this.selectedExperienceIds, id];
+      this.selectedExperienceIds = [id];
     }
+    this.ensureSelectedHourAvailable();
     this.confirmation = '';
     this.warning = '';
   }
@@ -385,6 +416,10 @@ export class AppComponent {
   }
 
   selectHour(hour: string): void {
+    if (!this.availableHours.includes(hour) || this.isHourBooked(hour)) {
+      return;
+    }
+
     this.selectedHour = hour;
     this.confirmation = '';
     this.warning = '';
@@ -419,6 +454,12 @@ export class AppComponent {
 
     if (this.lessonBonuses < selectedCount) {
       this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas clases.';
+      this.confirmation = '';
+      return;
+    }
+
+    if (!this.isSelectedHourAvailable) {
+      this.warning = 'Esta clase no esta disponible en esa hora. Elige otra franja horaria.';
       this.confirmation = '';
       return;
     }
@@ -522,7 +563,7 @@ export class AppComponent {
 
   openExperienceModal(experience?: Experience): void {
     this.editingExperience = experience || null;
-    this.experienceForm = experience ? { ...experience } : this.blankExperience();
+    this.experienceForm = experience ? { ...experience, hours: this.getExperienceHours(experience) } : this.blankExperience();
     this.isExperienceModalOpen = true;
   }
 
@@ -530,13 +571,15 @@ export class AppComponent {
     this.isExperienceModalOpen = false;
     this.editingExperience = null;
     this.experienceForm = this.blankExperience();
+    this.customExperienceHour = '';
   }
 
   saveExperience(): void {
     const form = {
       ...this.experienceForm,
       type: 'lessons' as BookingType,
-      price: Number(this.experienceForm.price)
+      price: Number(this.experienceForm.price),
+      hours: this.sanitizeExperienceHours(this.experienceForm.hours)
     };
 
     if (this.editingExperience) {
@@ -562,20 +605,26 @@ export class AppComponent {
   }
 
   createAdminReservation(): void {
-    const firstActive = this.experiences.find((experience) => experience.active);
-    const availableHour = this.hours.find((hour) => !this.isSlotFull(this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour));
-    if (!firstActive || !availableHour) {
+    const reservationOption = this.experiences
+      .filter((experience) => experience.active)
+      .map((experience) => ({
+        experience,
+        hour: this.getExperienceHours(experience).find((hour) => !this.isSlotFull(this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour))
+      }))
+      .find((option) => option.hour);
+
+    if (!reservationOption || !reservationOption.hour) {
       return;
     }
 
     this.bookingHistory = [{
       id: Date.now(),
       userId: null,
-      type: firstActive.type,
-      title: firstActive.title,
+      type: reservationOption.experience.type,
+      title: reservationOption.experience.title,
       date: this.formatDateFromKey(this.adminDate),
       dateKey: this.adminDate,
-      hour: availableHour,
+      hour: reservationOption.hour,
       payment: '1 bono',
       customerName: 'Reserva mostrador',
       phone: '600 000 000',
@@ -662,7 +711,11 @@ export class AppComponent {
 
   private loadLessonExperiences(): Experience[] {
     return this.loadFromStorage<Experience[]>(EXPERIENCES_KEY, this.defaultExperiences())
-      .filter((experience) => experience.type === 'lessons');
+      .filter((experience) => experience.type === 'lessons')
+      .map((experience) => ({
+        ...experience,
+        hours: this.getExperienceHours(experience)
+      }));
   }
 
   private loadActiveLessonBookings(): BookingHistoryItem[] {
@@ -692,6 +745,37 @@ export class AppComponent {
   isHourBooked(hour: string): boolean {
     const dateKey = this.toDateKey(this.selectedDate);
     return this.isSlotFull(dateKey, hour) || this.isSlotPast(dateKey, hour);
+  }
+
+  toggleExperienceHour(hour: string): void {
+    const currentHours = this.getExperienceFormHours();
+    if (currentHours.includes(hour) && currentHours.length === 1) {
+      return;
+    }
+
+    this.experienceForm = {
+      ...this.experienceForm,
+      hours: currentHours.includes(hour)
+        ? currentHours.filter((selectedHour) => selectedHour !== hour)
+        : [...currentHours, hour]
+    };
+  }
+
+  isExperienceHourSelected(hour: string): boolean {
+    return this.getExperienceFormHours().includes(hour);
+  }
+
+  addCustomExperienceHour(): void {
+    const hour = this.customExperienceHour.trim();
+    if (!this.isValidHour(hour)) {
+      return;
+    }
+
+    this.experienceForm = {
+      ...this.experienceForm,
+      hours: this.sortHours([...this.getExperienceFormHours(), hour])
+    };
+    this.customExperienceHour = '';
   }
 
   private hasCurrentUserBookedSlot(dateKey: string, hour: string): boolean {
@@ -725,6 +809,47 @@ export class AppComponent {
     return new Date(`${dateKey}T${hour}:00`) <= new Date();
   }
 
+  private ensureSelectedHourAvailable(): void {
+    if (this.availableHours.includes(this.selectedHour)) {
+      return;
+    }
+
+    this.selectedHour = this.availableHours[0] || this.hours[0];
+  }
+
+  private getExperienceHours(experience: Experience): string[] {
+    return this.sanitizeExperienceHours(experience.hours);
+  }
+
+  private sanitizeExperienceHours(hours?: string[]): string[] {
+    const validHours = this.sortHours([...(hours || [])].filter((hour) => this.isValidHour(hour)));
+    return validHours.length > 0 ? validHours : [...this.hours];
+  }
+
+  private getExperienceFormHours(): string[] {
+    return this.sortHours((this.experienceForm.hours || []).filter((hour) => this.isValidHour(hour)));
+  }
+
+  private isValidHour(hour: string): boolean {
+    if (!/^\d{2}:\d{2}$/.test(hour)) {
+      return false;
+    }
+
+    const [rawHour, rawMinute] = hour.split(':').map(Number);
+    return rawHour >= 0 && rawHour <= 23 && rawMinute >= 0 && rawMinute <= 59;
+  }
+
+  private sortHours(hours: string[]): string[] {
+    return [...new Set(hours)]
+      .filter((hour) => this.isValidHour(hour))
+      .sort((first, second) => this.getHourMinutes(first) - this.getHourMinutes(second));
+  }
+
+  private getHourMinutes(hour: string): number {
+    const [rawHour, rawMinute] = hour.split(':').map(Number);
+    return rawHour * 60 + rawMinute;
+  }
+
   private loadFromStorage<T>(key: string, fallback: T): T {
     try {
       const raw = localStorage.getItem(key);
@@ -744,7 +869,8 @@ export class AppComponent {
       duration: '60 min',
       price: 45,
       image: 'assets/route-sendero.jpg',
-      active: true
+      active: true,
+      hours: [...this.hours]
     };
   }
 
@@ -759,7 +885,8 @@ export class AppComponent {
         duration: '60 min',
         price: 38,
         image: 'assets/route-sendero.jpg',
-        active: true
+        active: true,
+        hours: ['11:00', '18:00', '18:45', '19:30']
       },
       {
         id: 2,
@@ -770,7 +897,8 @@ export class AppComponent {
         duration: '75 min',
         price: 55,
         image: 'assets/route-crepusculo.jpg',
-        active: true
+        active: true,
+        hours: ['11:00', '18:00', '18:45', '19:30']
       }
     ];
   }

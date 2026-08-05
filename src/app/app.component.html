@@ -62,7 +62,7 @@
           <span class="corner" *ngIf="selectedExperienceIds.includes(experience.id)" aria-hidden="true">✓</span>
         </article>
 
-        <p class="availability">Puedes seleccionar varias opciones dentro de la misma categoria.</p>
+        <p class="availability">Selecciona una clase para elegir su fecha y hora.</p>
       </div>
 
       <div class="calendar-column">
@@ -98,7 +98,7 @@
           <div class="hours">
             <button
               type="button"
-              *ngFor="let hour of hours"
+              *ngFor="let hour of availableHours"
               [class.active]="hour === selectedHour"
               [class.disabled]="isHourBooked(hour)"
               [disabled]="isHourBooked(hour)"
@@ -107,6 +107,9 @@
               {{ hour }}
             </button>
           </div>
+          <p class="warning" *ngIf="selectedExperiences.length > 0 && availableHours.length === 0">
+            Esta clase no tiene franjas horarias disponibles.
+          </p>
           <p>Plazas limitadas. La ocupacion de clases se gestiona de forma privada.</p>
         </div>
       </div>
@@ -162,7 +165,7 @@
             <span>Bonos tras reservar</span>
             <strong>{{ lessonBonuses >= selectedExperiences.length ? lessonBonuses - selectedExperiences.length : 0 }}</strong>
           </div>
-          <p class="selection-help" *ngIf="selectedExperiences.length === 0">Marca una o varias opciones para continuar.</p>
+          <p class="selection-help" *ngIf="selectedExperiences.length === 0">Marca una clase para continuar.</p>
         </div>
 
         <button class="pay-button" type="button" [disabled]="!canReserve" (click)="reserve()">
@@ -327,7 +330,7 @@
 
       <div class="schedule-board">
         <div class="schedule-hours">
-          <span *ngFor="let hour of hours">{{ hour }}</span>
+          <span *ngFor="let hour of adminScheduleHours">{{ hour }}</span>
         </div>
         <div class="schedule-list">
           <article *ngFor="let booking of adminDayReservations" class="schedule-booking-card" [class.lesson]="booking.type === 'lessons'">
@@ -359,6 +362,7 @@
             <div class="admin-card-meta">
               <span>{{ experience.level }}</span>
               <span>{{ experience.duration }}</span>
+              <span>{{ experience.hours.join(', ') }}</span>
               <strong>{{ experience.price }} EUR</strong>
             </div>
           </div>
@@ -524,6 +528,24 @@
             Imagen
             <input type="text" name="experienceImage" [(ngModel)]="experienceForm.image">
           </label>
+          <div class="form-field">
+            <span>Franjas horarias</span>
+            <div class="time-slot-grid">
+              <button
+                type="button"
+                *ngFor="let hour of editableExperienceHours"
+                [class.active]="isExperienceHourSelected(hour)"
+                (click)="toggleExperienceHour(hour)"
+              >
+                {{ hour }}
+              </button>
+            </div>
+            <div class="custom-time-row">
+              <input type="time" name="customExperienceHour" [(ngModel)]="customExperienceHour">
+              <button class="history-action" type="button" (click)="addCustomExperienceHour()">Anadir franja</button>
+            </div>
+            <p class="limit-note">Las franjas anadidas aqui solo se guardan en esta clase.</p>
+          </div>
           <label class="check-line">
             <input type="checkbox" name="experienceActive" [(ngModel)]="experienceForm.active">
             Visible para clientes
