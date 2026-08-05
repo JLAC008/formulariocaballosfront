@@ -98,7 +98,7 @@ export class AppComponent {
 
   users: CustomerUser[] = this.loadFromStorage<CustomerUser[]>(USERS_KEY, []);
   experiences: Experience[] = this.loadLessonExperiences();
-  bookingHistory: BookingHistoryItem[] = this.loadLessonBookings();
+  bookingHistory: BookingHistoryItem[] = this.loadActiveLessonBookings();
 
   view: AppView = this.getInitialView();
   activeAdminTab: AdminTab = 'schedule';
@@ -212,7 +212,9 @@ export class AppComponent {
     if (!this.currentUser) {
       return [];
     }
-    return this.bookingHistory.filter((booking) => booking.userId === this.currentUserId);
+    return this.bookingHistory
+      .filter((booking) => booking.userId === this.currentUserId && booking.status === 'CONFIRMED' && this.isBookingReminderActive(booking))
+      .sort((first, second) => this.getBookingDateTime(first).getTime() - this.getBookingDateTime(second).getTime());
   }
 
   get adminDayReservations(): BookingHistoryItem[] {
@@ -457,6 +459,7 @@ export class AppComponent {
       this.showLogin('login');
       return;
     }
+    this.removeExpiredBookings();
     this.isHistoryModalOpen = true;
   }
 
@@ -625,9 +628,28 @@ export class AppComponent {
       .filter((experience) => experience.type === 'lessons');
   }
 
-  private loadLessonBookings(): BookingHistoryItem[] {
+  private loadActiveLessonBookings(): BookingHistoryItem[] {
     return this.loadFromStorage<BookingHistoryItem[]>(BOOKINGS_KEY, [])
-      .filter((booking) => booking.type === 'lessons');
+      .filter((booking) => booking.type === 'lessons' && this.isBookingReminderActive(booking));
+  }
+
+  private removeExpiredBookings(): void {
+    const activeBookings = this.bookingHistory.filter((booking) => this.isBookingReminderActive(booking));
+    if (activeBookings.length === this.bookingHistory.length) {
+      return;
+    }
+
+    this.bookingHistory = activeBookings;
+    this.persistBookings();
+  }
+
+  private isBookingReminderActive(booking: BookingHistoryItem): boolean {
+    const reminderLimit = this.addHours(this.getBookingDateTime(booking), 1);
+    return reminderLimit > new Date();
+  }
+
+  private getBookingDateTime(booking: BookingHistoryItem): Date {
+    return new Date(`${booking.dateKey}T${booking.hour}:00`);
   }
 
   private loadFromStorage<T>(key: string, fallback: T): T {
@@ -682,6 +704,10 @@ export class AppComponent {
 
   private addMonths(date: Date, months: number): Date {
     return new Date(date.getFullYear(), date.getMonth() + months, date.getDate());
+  }
+
+  private addHours(date: Date, hours: number): Date {
+    return new Date(date.getTime() + hours * 60 * 60 * 1000);
   }
 
   private startOfDay(date: Date): Date {

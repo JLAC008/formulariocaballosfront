@@ -15,7 +15,7 @@
       </nav>
 
       <div class="top-actions">
-        <button class="history-action" type="button" (click)="openHistoryModal()">Historico</button>
+        <button class="history-action" type="button" (click)="openHistoryModal()">Recordatorio</button>
         <button class="history-action" type="button" *ngIf="!currentUser" (click)="showLogin('login')">Entrar</button>
         <button class="history-action" type="button" *ngIf="currentUser" (click)="logoutCustomer()">Salir</button>
         <button class="history-action" type="button" (click)="showAdmin()">Admin</button>
@@ -217,9 +217,9 @@
     <div class="modal-backdrop" *ngIf="isHistoryModalOpen" (click)="closeHistoryModal()">
       <section class="history-modal" role="dialog" aria-modal="true" aria-labelledby="history-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeHistoryModal()">x</button>
-        <p class="eyebrow modal-eyebrow">Mis reservas</p>
-        <h2 id="history-modal-title">Historico de reservas</h2>
-        <p class="history-empty" *ngIf="visibleHistory.length === 0">Todavia no tienes reservas.</p>
+        <p class="eyebrow modal-eyebrow">Mis proximas reservas</p>
+        <h2 id="history-modal-title">Recordatorio de reservas</h2>
+        <p class="history-empty" *ngIf="visibleHistory.length === 0">No tienes reservas futuras.</p>
         <div class="history-list" *ngIf="visibleHistory.length > 0">
           <article class="history-item" *ngFor="let booking of visibleHistory">
             <div>
