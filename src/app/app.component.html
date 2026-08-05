@@ -16,7 +16,9 @@
 
       <div class="top-actions">
         <button class="history-action" type="button" (click)="openHistoryModal()">Historico</button>
-        <button class="history-action" type="button" (click)="showLogin()">Admin</button>
+        <button class="history-action" type="button" *ngIf="!currentUser" (click)="showLogin('login')">Entrar</button>
+        <button class="history-action" type="button" *ngIf="currentUser" (click)="logoutCustomer()">Salir</button>
+        <button class="history-action" type="button" (click)="showAdmin()">Admin</button>
         <a class="outline-action" href="#booking">Reservar experiencia</a>
       </div>
     </header>
@@ -114,20 +116,26 @@
       <aside class="summary-column">
         <h2 class="section-title"><span aria-hidden="true">♙</span> Bonos</h2>
         <div class="bonus-box always-visible" [class.empty]="lessonBonuses === 0">
-          <span>Total de bonos disponibles</span>
+          <span>{{ currentUser ? 'Bonos de ' + currentUser.name : 'Inicia sesion para tener bonos' }}</span>
           <strong>{{ lessonBonuses }}</strong>
         </div>
-        <p class="limit-note">Los bonos se descuentan solo al reservar clases.</p>
+        <p class="limit-note">Los bonos se guardan en tu cuenta y se descuentan solo al reservar clases.</p>
 
-        <label>
+        <label *ngIf="!currentUser">
           Nombre completo
           <input type="text" [(ngModel)]="customerName">
         </label>
 
-        <label>
+        <label *ngIf="!currentUser">
           Telefono
           <input type="tel" [(ngModel)]="phone">
         </label>
+
+        <div class="session-box" *ngIf="currentUser">
+          <strong>{{ currentUser.name }}</strong>
+          <span>{{ currentUser.email }}</span>
+          <span>{{ currentUser.phone }}</span>
+        </div>
 
         <div class="summary">
           <h2>Resumen de tu reserva</h2>
@@ -219,9 +227,9 @@
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeHistoryModal()">x</button>
         <p class="eyebrow modal-eyebrow">Mis reservas</p>
         <h2 id="history-modal-title">Historico de reservas</h2>
-        <p class="history-empty" *ngIf="bookingHistory.length === 0">Todavia no tienes reservas.</p>
-        <div class="history-list" *ngIf="bookingHistory.length > 0">
-          <article class="history-item" *ngFor="let booking of bookingHistory">
+        <p class="history-empty" *ngIf="visibleHistory.length === 0">Todavia no tienes reservas.</p>
+        <div class="history-list" *ngIf="visibleHistory.length > 0">
+          <article class="history-item" *ngFor="let booking of visibleHistory">
             <div>
               <strong>{{ booking.title }}</strong>
               <span>{{ getTypeLabel(booking.type) }} · {{ booking.date }}</span>
@@ -238,24 +246,37 @@
   <main class="auth-page">
     <section class="auth-card">
       <button class="back-link" type="button" (click)="showClient()">Volver a cliente</button>
-      <p class="eyebrow">Acceso privado</p>
-      <h1>Panel de administrador</h1>
-      <p class="auth-copy">Gestiona agenda, reservas, bonos y experiencias del Centro Ecuestre Martinez Luna.</p>
+      <p class="eyebrow">{{ authMode === 'register' ? 'Crear cuenta' : 'Acceso' }}</p>
+      <h1>{{ authMode === 'register' ? 'Nueva cuenta' : 'Iniciar sesion' }}</h1>
+      <p class="auth-copy">Entra como cliente para comprar bonos y conservarlos, o accede como administrador con admin / admin.</p>
 
-      <form class="auth-form" (ngSubmit)="login()">
+      <div class="auth-switch">
+        <button type="button" [class.active]="authMode === 'login'" (click)="setAuthMode('login')">Entrar</button>
+        <button type="button" [class.active]="authMode === 'register'" (click)="setAuthMode('register')">Crear cuenta</button>
+      </div>
+
+      <form class="auth-form" (ngSubmit)="authMode === 'register' ? register() : login()">
+        <label *ngIf="authMode === 'register'">
+          Nombre completo
+          <input type="text" name="registerName" [(ngModel)]="registerName" autocomplete="name">
+        </label>
+        <label *ngIf="authMode === 'register'">
+          Telefono
+          <input type="tel" name="registerPhone" [(ngModel)]="registerPhone" autocomplete="tel">
+        </label>
         <label>
-          Usuario
+          Email o usuario admin
           <input type="text" name="loginUser" [(ngModel)]="loginUser" autocomplete="username">
         </label>
         <label>
           Contrasena
           <input type="password" name="loginPassword" [(ngModel)]="loginPassword" autocomplete="current-password">
         </label>
-        <p class="warning" *ngIf="loginError">{{ loginError }}</p>
-        <button class="pay-button" type="submit">Entrar al panel</button>
+        <p class="warning" *ngIf="authError">{{ authError }}</p>
+        <button class="pay-button" type="submit">{{ authMode === 'register' ? 'Crear cuenta' : 'Entrar' }}</button>
       </form>
 
-      <p class="secure demo-note">Demo local: admin / admin</p>
+      <p class="secure demo-note">Los bonos se guardan en la cuenta del cliente. Admin: admin / admin</p>
     </section>
   </main>
 </ng-container>
@@ -297,6 +318,7 @@
       <button type="button" [class.active]="activeAdminTab === 'schedule'" (click)="setAdminTab('schedule')">Agenda</button>
       <button type="button" [class.active]="activeAdminTab === 'experiences'" (click)="setAdminTab('experiences')">Experiencias</button>
       <button type="button" [class.active]="activeAdminTab === 'reservations'" (click)="setAdminTab('reservations')">Reservas</button>
+      <button type="button" [class.active]="activeAdminTab === 'users'" (click)="setAdminTab('users')">Usuarios</button>
       <button type="button" [class.active]="activeAdminTab === 'stats'" (click)="setAdminTab('stats')">Estadisticas</button>
     </nav>
 
@@ -409,6 +431,50 @@
       </div>
     </section>
 
+    <section class="admin-section" *ngIf="activeAdminTab === 'users'">
+      <div class="section-actions">
+        <div>
+          <h2>Usuarios y bonos</h2>
+          <p>Consulta que clientes tienen bonos guardados y cuantas reservas han hecho.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Contacto</th>
+              <th>Bonos</th>
+              <th>Ajustar bonos</th>
+              <th>Reservas</th>
+              <th>Alta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of users">
+              <td>
+                <strong>{{ user.name }}</strong>
+                <span>{{ user.email }}</span>
+              </td>
+              <td>{{ user.phone }}</td>
+              <td><strong>{{ user.bonuses }}</strong></td>
+              <td>
+                <div class="bonus-admin-actions">
+                  <button type="button" class="history-action" (click)="adjustUserBonuses(user.id, -1)" [disabled]="user.bonuses === 0">-1</button>
+                  <button type="button" class="history-action" (click)="adjustUserBonuses(user.id, 1)">+1</button>
+                  <button type="button" class="history-action" (click)="adjustUserBonuses(user.id, 5)">+5</button>
+                </div>
+              </td>
+              <td>{{ getUserReservationsCount(user.id) }}</td>
+              <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="history-empty" *ngIf="users.length === 0">Todavia no hay usuarios registrados.</p>
+      </div>
+    </section>
+
     <section class="admin-section" *ngIf="activeAdminTab === 'stats'">
       <div class="section-actions">
         <div>
@@ -423,7 +489,7 @@
         </article>
         <article>
           <span>Bonos cliente</span>
-          <strong>{{ lessonBonuses }}</strong>
+          <strong>{{ totalUserBonuses }}</strong>
         </article>
         <article>
           <span>Mas solicitada</span>

@@ -496,6 +496,27 @@ textarea {
   margin: 0 0 12px;
 }
 
+.session-box {
+  background: rgba(255, 252, 247, 0.72);
+  border: 1px solid var(--line);
+  color: #5f564f;
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px 12px;
+}
+
+.session-box strong {
+  color: #2f261f;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.session-box span {
+  font-size: 12px;
+}
+
 .bonus-box {
   align-items: center;
   background: rgba(184, 134, 35, 0.09);
@@ -981,6 +1002,29 @@ dd {
   margin-top: 24px;
 }
 
+.auth-switch {
+  border: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 20px;
+}
+
+.auth-switch button {
+  background: rgba(255, 252, 247, 0.7);
+  border: 0;
+  color: #6a625b;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 38px;
+  text-transform: uppercase;
+}
+
+.auth-switch button.active {
+  background: linear-gradient(180deg, #c49430, #ad7d1d);
+  color: #fff9ee;
+}
+
 .back-link {
   background: transparent;
   border: 0;
@@ -1274,6 +1318,23 @@ dd {
 .admin-table td span {
   color: #867c73;
   margin-top: 4px;
+}
+
+.bonus-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bonus-admin-actions .history-action {
+  min-height: 30px;
+  min-width: 44px;
+  padding: 0 10px;
+}
+
+.bonus-admin-actions .history-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
 }
 
 .stats-grid {
