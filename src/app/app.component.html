@@ -161,10 +161,6 @@
               <dd>{{ selectedExperiences.length }} bono{{ selectedExperiences.length === 1 ? '' : 's' }}</dd>
             </div>
           </dl>
-          <div class="total bonus-total" *ngIf="selectedExperiences.length > 0">
-            <span>Bonos tras reservar</span>
-            <strong>{{ lessonBonuses >= selectedExperiences.length ? lessonBonuses - selectedExperiences.length : 0 }}</strong>
-          </div>
           <p class="selection-help" *ngIf="selectedExperiences.length === 0">Marca una clase para continuar.</p>
         </div>
 
