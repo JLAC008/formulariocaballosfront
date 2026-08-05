@@ -1392,6 +1392,11 @@ dd {
   border-color: rgba(184, 134, 35, 0.3);
 }
 
+.schedule-booking-card.cancelled {
+  background: #f8eeee;
+  border-color: #d9b8b0;
+}
+
 .schedule-booking-card strong,
 .schedule-booking-card span,
 .schedule-booking-card em {
@@ -1878,6 +1883,7 @@ textarea,
 .bonus-box.empty,
 .warning,
 .history-item.cancelled,
+.schedule-booking-card.cancelled,
 .history-status-row.cancelled {
   background: #f8eeee;
   border-color: #d9b8b0;

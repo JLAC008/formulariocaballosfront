@@ -301,15 +301,19 @@ export class AppComponent {
         && (booking.status === 'CONFIRMED' || booking.status === 'CANCELLED')
         && this.isBookingReminderActive(booking)
       )
-      .sort((first, second) => this.getBookingDateTime(first).getTime() - this.getBookingDateTime(second).getTime());
+      .sort((first, second) => this.getBookingDateTime(second).getTime() - this.getBookingDateTime(first).getTime());
   }
 
   get adminDayReservations(): BookingHistoryItem[] {
-    return this.bookingHistory.filter((booking) => booking.dateKey === this.adminDate && booking.status !== 'CANCELLED');
+    return this.bookingHistory.filter((booking) => booking.dateKey === this.adminDate);
   }
 
   getAdminReservationsByHour(hour: string): BookingHistoryItem[] {
     return this.adminDayReservations.filter((booking) => booking.hour === hour);
+  }
+
+  getAdminConfirmedReservationsByHour(hour: string): BookingHistoryItem[] {
+    return this.getAdminReservationsByHour(hour).filter((booking) => booking.status === 'CONFIRMED');
   }
 
   getAdminScheduleGroupsByHour(hour: string): AdminScheduleGroup[] {
@@ -348,7 +352,7 @@ export class AppComponent {
   }
 
   get pendingLessonsToday(): number {
-    return this.adminDayReservations.length;
+    return this.adminDayReservations.filter((booking) => booking.status === 'CONFIRMED').length;
   }
 
   get totalUserBonuses(): number {
@@ -1063,7 +1067,8 @@ export class AppComponent {
   }
 
   private getBookingClassKey(booking: BookingHistoryItem): string {
-    return booking.experienceId ? `experience:${booking.experienceId}` : `title:${booking.title}`;
+    const classKey = booking.experienceId ? `experience:${booking.experienceId}` : `title:${booking.title}`;
+    return `${classKey}:status:${booking.status}`;
   }
 
   private isSameBookingClass(booking: BookingHistoryItem, referenceBooking: BookingHistoryItem): boolean {
