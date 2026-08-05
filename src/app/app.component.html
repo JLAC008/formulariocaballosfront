@@ -15,11 +15,13 @@
       </svg>
     </button>
     <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
-      <button type="button" (click)="openHistoryModal()">Recordatorio</button>
-      <button type="button" *ngIf="!currentUser" (click)="showLogin('login')">Entrar</button>
-      <button type="button" *ngIf="currentUser" (click)="logoutCustomer()">Salir cliente</button>
-      <button type="button" *ngIf="view !== 'admin'" (click)="showAdmin()">Admin</button>
-      <button type="button" *ngIf="view === 'admin'" (click)="showClient()">Pantalla cliente</button>
+      <ng-container *ngIf="currentUser; else guestAccountMenu">
+        <button type="button" (click)="openHistoryModal()">Recordatorio</button>
+        <button type="button" (click)="logoutCustomer()">Cerrar sesion</button>
+      </ng-container>
+      <ng-template #guestAccountMenu>
+        <button type="button" (click)="showLogin('login')">Iniciar sesion</button>
+      </ng-template>
     </div>
   </div>
 </header>
