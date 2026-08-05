@@ -91,8 +91,6 @@ export class AppComponent {
   readonly weekDays = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
   readonly hours = ['09:00', '11:30', '17:00', '18:30'];
   readonly bonusPacks: BonusPack[] = [
-    { amount: 1, price: 20 },
-    { amount: 5, price: 90 },
     { amount: 10, price: 160 }
   ];
   readonly minDate = this.startOfDay(new Date());

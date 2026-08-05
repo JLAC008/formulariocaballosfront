@@ -762,7 +762,8 @@ dd {
 .bonus-pack-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: minmax(146px, 190px);
+  justify-content: center;
 }
 
 .bonus-pack-grid button {

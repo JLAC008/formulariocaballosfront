@@ -178,7 +178,7 @@
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeBonusModal()">x</button>
         <p class="eyebrow modal-eyebrow">Bonos de clases</p>
         <h2 id="bonus-modal-title">Comprar bonos</h2>
-        <p class="modal-copy">Elige un paquete. Los bonos se anaden al momento y podras reservar clases con ellos.</p>
+        <p class="modal-copy">Los bonos se compran de 10 en 10. Se anaden al momento y podras reservar clases con ellos.</p>
         <div class="bonus-pack-grid">
           <button type="button" *ngFor="let pack of bonusPacks" (click)="purchaseBonuses(pack)">
             <strong>{{ pack.amount }}</strong>
