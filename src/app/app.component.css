@@ -1358,9 +1358,16 @@ dd {
 }
 
 .bonus-admin-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 6px;
+  grid-template-columns: minmax(76px, 96px) auto auto;
+}
+
+.bonus-admin-actions input {
+  height: 30px;
+  margin-top: 0;
+  min-width: 0;
+  padding: 0 8px;
 }
 
 .bonus-admin-actions .history-action {

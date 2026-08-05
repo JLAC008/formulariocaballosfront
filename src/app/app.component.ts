@@ -134,6 +134,7 @@ export class AppComponent {
   deletingExperience: Experience | null = null;
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
+  userBonusAdjustments: Record<number, number> = {};
 
   get currentUser(): CustomerUser | null {
     return this.users.find((user) => user.id === this.currentUserId) || null;
@@ -754,6 +755,16 @@ export class AppComponent {
       ? { ...user, bonuses: Math.max(0, user.bonuses + delta) }
       : user);
     this.persistUsers();
+  }
+
+  applyUserBonusAdjustment(userId: number, direction: 1 | -1): void {
+    const amount = Math.max(0, Number(this.userBonusAdjustments[userId]) || 0);
+    if (amount === 0) {
+      return;
+    }
+
+    this.adjustUserBonuses(userId, amount * direction);
+    this.userBonusAdjustments[userId] = 0;
   }
 
   private setCurrentUser(user: CustomerUser): void {

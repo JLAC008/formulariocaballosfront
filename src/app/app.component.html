@@ -450,9 +450,9 @@
               <td><strong>{{ user.bonuses }}</strong></td>
               <td>
                 <div class="bonus-admin-actions">
-                  <button type="button" class="history-action" (click)="adjustUserBonuses(user.id, -1)" [disabled]="user.bonuses === 0">-1</button>
-                  <button type="button" class="history-action" (click)="adjustUserBonuses(user.id, 1)">+1</button>
-                  <button type="button" class="history-action" (click)="adjustUserBonuses(user.id, 5)">+5</button>
+                  <input type="number" min="0" step="1" [(ngModel)]="userBonusAdjustments[user.id]" placeholder="Bonos">
+                  <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, 1)">Anadir</button>
+                  <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, -1)" [disabled]="user.bonuses === 0">Quitar</button>
                 </div>
               </td>
               <td>{{ getUserReservationsCount(user.id) }}</td>
