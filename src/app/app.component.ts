@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-type BookingType = 'routes' | 'lessons';
+type BookingType = 'lessons';
 type AppView = 'client' | 'login' | 'admin';
 type AdminTab = 'schedule' | 'experiences' | 'reservations' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
@@ -87,7 +87,7 @@ const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  readonly navItems = ['Inicio', 'Rutas a caballo', 'Clases de equitacion', 'Sobre nosotros', 'Contacto'];
+  readonly navItems = ['Inicio', 'Clases de equitacion', 'Sobre nosotros', 'Contacto'];
   readonly weekDays = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
   readonly hours = ['09:00', '11:30', '17:00', '18:30'];
   readonly bonusPacks: BonusPack[] = [
@@ -99,11 +99,10 @@ export class AppComponent {
   readonly maxDate = this.addMonths(this.minDate, 3);
 
   users: CustomerUser[] = this.loadFromStorage<CustomerUser[]>(USERS_KEY, []);
-  experiences: Experience[] = this.loadFromStorage<Experience[]>(EXPERIENCES_KEY, this.defaultExperiences());
-  bookingHistory: BookingHistoryItem[] = this.loadFromStorage<BookingHistoryItem[]>(BOOKINGS_KEY, []);
+  experiences: Experience[] = this.loadLessonExperiences();
+  bookingHistory: BookingHistoryItem[] = this.loadLessonBookings();
 
   view: AppView = this.getInitialView();
-  activeType: BookingType = 'routes';
   activeAdminTab: AdminTab = 'schedule';
   authMode: AuthMode = 'login';
   selectedExperienceIds: number[] = [];
@@ -111,7 +110,6 @@ export class AppComponent {
   selectedDate = new Date(this.minDate);
   adminDate = this.toDateKey(this.minDate);
   selectedHour = '18:30';
-  people = 1;
   currentUserId: number | null = this.getStoredCustomerId();
   isBonusModalOpen = false;
   isReservationModalOpen = false;
@@ -140,7 +138,7 @@ export class AppComponent {
   }
 
   get filteredExperiences(): Experience[] {
-    return this.experiences.filter((experience) => experience.type === this.activeType && experience.active);
+    return this.experiences.filter((experience) => experience.active);
   }
 
   get selectedExperiences(): Experience[] {
@@ -149,14 +147,6 @@ export class AppComponent {
 
   get selectedExperienceTitle(): string {
     return this.selectedExperiences.map((experience) => experience.title).join(', ');
-  }
-
-  get total(): number {
-    return this.selectedExperiences.reduce((sum, experience) => sum + experience.price, 0) * this.people;
-  }
-
-  get isLesson(): boolean {
-    return this.activeType === 'lessons';
   }
 
   get monthLabel(): string {
@@ -205,23 +195,19 @@ export class AppComponent {
   }
 
   get summarySelectionLabel(): string {
-    return this.isLesson
-      ? `Clases seleccionadas (${this.selectedExperiences.length})`
-      : `Rutas seleccionadas (${this.selectedExperiences.length})`;
+    return `Clases seleccionadas (${this.selectedExperiences.length})`;
   }
 
   get actionLabel(): string {
-    return this.isLesson ? 'Reservar con bono' : 'Reservar y pagar';
+    return 'Reservar con bono';
   }
 
   get actionHelpText(): string {
-    return this.isLesson
-      ? 'Debes iniciar sesion para usar o comprar bonos'
-      : 'Pago registrado en el momento - Confirmacion inmediata';
+    return 'Debes iniciar sesion para usar o comprar bonos';
   }
 
   get canReserve(): boolean {
-    return this.selectedExperiences.length > 0 && (!this.isLesson || (this.currentUser !== null && this.lessonBonuses >= this.selectedExperiences.length));
+    return this.selectedExperiences.length > 0 && this.currentUser !== null && this.lessonBonuses >= this.selectedExperiences.length;
   }
 
   get visibleHistory(): BookingHistoryItem[] {
@@ -247,14 +233,8 @@ export class AppComponent {
     return this.bookingHistory.filter((booking) => booking.status === 'CONFIRMED').length;
   }
 
-  get totalRevenue(): number {
-    return this.bookingHistory
-      .filter((booking) => booking.status !== 'CANCELLED' && booking.type === 'routes')
-      .reduce((sum, booking) => sum + booking.amount, 0);
-  }
-
   get pendingLessonsToday(): number {
-    return this.adminDayReservations.filter((booking) => booking.type === 'lessons').length;
+    return this.adminDayReservations.length;
   }
 
   get totalUserBonuses(): number {
@@ -366,13 +346,6 @@ export class AppComponent {
     this.confirmation = '';
   }
 
-  setType(type: BookingType): void {
-    this.activeType = type;
-    this.selectedExperienceIds = [];
-    this.confirmation = '';
-    this.warning = '';
-  }
-
   selectExperience(id: number): void {
     if (this.selectedExperienceIds.includes(id)) {
       this.selectedExperienceIds = this.selectedExperienceIds.filter((selectedId) => selectedId !== id);
@@ -420,49 +393,43 @@ export class AppComponent {
       return;
     }
 
-    if (this.isLesson && !this.currentUser) {
+    if (!this.currentUser) {
       this.warning = 'Inicia sesion o crea una cuenta para reservar clases con bonos.';
       this.showLogin('login');
       return;
     }
 
-    if (this.isLesson && this.lessonBonuses < selectedCount) {
+    if (this.lessonBonuses < selectedCount) {
       this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas clases.';
       this.confirmation = '';
       return;
     }
 
-    if (this.isLesson) {
-      this.updateCurrentUserBonuses(-selectedCount);
-    }
+    this.updateCurrentUserBonuses(-selectedCount);
 
     const customer = this.currentUser;
     const booking: BookingHistoryItem = {
       id: Date.now(),
       userId: customer?.id || null,
-      type: this.activeType,
+      type: 'lessons',
       title: this.selectedExperienceTitle,
       date: this.formattedDate,
       dateKey: this.toDateKey(this.selectedDate),
       hour: this.selectedHour,
-      payment: this.isLesson
-        ? `${selectedCount} bono${selectedCount === 1 ? '' : 's'}`
-        : `${this.total.toFixed(2)} EUR`,
+      payment: `${selectedCount} bono${selectedCount === 1 ? '' : 's'}`,
       customerName: customer?.name || this.customerName,
       phone: customer?.phone || this.phone,
-      amount: this.isLesson ? 0 : this.total,
+      amount: 0,
       status: 'CONFIRMED'
     };
 
     this.bookingHistory = [booking, ...this.bookingHistory];
     this.persistBookings();
 
-    this.reservationMessage = this.isLesson
-      ? `Has reservado ${selectedCount} clase${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`
-      : `Has reservado ${selectedCount} ruta${selectedCount === 1 ? '' : 's'}.`;
+    this.reservationMessage = `Has reservado ${selectedCount} clase${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
     this.isReservationModalOpen = true;
     this.confirmation = '';
-    this.warning = this.isLesson && this.lessonBonuses === 0
+    this.warning = this.lessonBonuses === 0
       ? 'Has agotado tus bonos. Compra mas bonos para reservar nuevas clases.'
       : '';
   }
@@ -531,6 +498,7 @@ export class AppComponent {
   saveExperience(): void {
     const form = {
       ...this.experienceForm,
+      type: 'lessons' as BookingType,
       price: Number(this.experienceForm.price)
     };
 
@@ -570,17 +538,17 @@ export class AppComponent {
       date: this.formatDateFromKey(this.adminDate),
       dateKey: this.adminDate,
       hour: '11:30',
-      payment: firstActive.type === 'lessons' ? '1 bono' : `${firstActive.price.toFixed(2)} EUR`,
+      payment: '1 bono',
       customerName: 'Reserva mostrador',
       phone: '600 000 000',
-      amount: firstActive.type === 'lessons' ? 0 : firstActive.price,
+      amount: 0,
       status: 'CONFIRMED'
     }, ...this.bookingHistory];
     this.persistBookings();
   }
 
   getTypeLabel(type: BookingType): string {
-    return type === 'lessons' ? 'Clase' : 'Ruta';
+    return 'Clase';
   }
 
   getStatusLabel(status: ReservationStatus): string {
@@ -654,6 +622,16 @@ export class AppComponent {
     localStorage.setItem(EXPERIENCES_KEY, JSON.stringify(this.experiences));
   }
 
+  private loadLessonExperiences(): Experience[] {
+    return this.loadFromStorage<Experience[]>(EXPERIENCES_KEY, this.defaultExperiences())
+      .filter((experience) => experience.type === 'lessons');
+  }
+
+  private loadLessonBookings(): BookingHistoryItem[] {
+    return this.loadFromStorage<BookingHistoryItem[]>(BOOKINGS_KEY, [])
+      .filter((booking) => booking.type === 'lessons');
+  }
+
   private loadFromStorage<T>(key: string, fallback: T): T {
     try {
       const raw = localStorage.getItem(key);
@@ -666,7 +644,7 @@ export class AppComponent {
   private blankExperience(): Experience {
     return {
       id: 0,
-      type: 'routes',
+      type: 'lessons',
       title: '',
       description: '',
       level: 'Principiante',
@@ -681,39 +659,6 @@ export class AppComponent {
     return [
       {
         id: 1,
-        type: 'routes',
-        title: 'Ruta del Sendero Real',
-        description: 'Recorrido sereno por campos de olivos y senderos de tierra, ideal para disfrutar del paisaje al paso.',
-        level: 'Principiante',
-        duration: '90 min',
-        price: 45,
-        image: 'assets/route-sendero.jpg',
-        active: true
-      },
-      {
-        id: 2,
-        type: 'routes',
-        title: 'Ruta del Crepusculo',
-        description: 'Paseo al atardecer por las colinas con vistas panoramicas. Una experiencia inolvidable.',
-        level: 'Intermedio',
-        duration: '120 min',
-        price: 60,
-        image: 'assets/route-crepusculo.jpg',
-        active: true
-      },
-      {
-        id: 3,
-        type: 'routes',
-        title: 'Ruta de Galope Avanzado',
-        description: 'Para jinetes con experiencia. Tramos a galope por campos abiertos con guia profesional.',
-        level: 'Avanzado',
-        duration: '150 min',
-        price: 80,
-        image: 'assets/route-galope.jpg',
-        active: true
-      },
-      {
-        id: 4,
         type: 'lessons',
         title: 'Clase de Iniciacion',
         description: 'Sesion guiada en pista para aprender postura, control basico y seguridad desde cero.',
@@ -724,7 +669,7 @@ export class AppComponent {
         active: true
       },
       {
-        id: 5,
+        id: 2,
         type: 'lessons',
         title: 'Clase Tecnica Privada',
         description: 'Trabajo personalizado para mejorar ayudas, asiento y confianza con seguimiento individual.',

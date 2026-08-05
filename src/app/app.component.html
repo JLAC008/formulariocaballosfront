@@ -28,8 +28,8 @@
         <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
         <h1>Reserva tu <span>experiencia</span></h1>
         <p class="intro">
-          Rutas a caballo entre olivos y senderos de tierra, y clases de equitacion adaptadas a tu nivel.
-          Elige tu opcion y asegura tu plaza.
+          Clases de equitacion adaptadas a tu nivel, con bonos guardados en tu cuenta.
+          Elige tu clase y asegura tu plaza.
         </p>
         <a class="primary-action" href="#booking">Reserva ahora <span aria-hidden="true">-></span></a>
       </div>
@@ -38,10 +38,7 @@
 
     <section class="booking" id="booking">
       <div class="experience-column">
-        <div class="tabs" role="tablist" aria-label="Tipo de reserva">
-          <button type="button" [class.active]="activeType === 'routes'" (click)="setType('routes')">Rutas a caballo</button>
-          <button type="button" [class.active]="activeType === 'lessons'" (click)="setType('lessons')">Clases de equitacion</button>
-        </div>
+        <h2 class="section-title">Clases de equitacion</h2>
 
         <article
           *ngFor="let experience of filteredExperiences"
@@ -59,8 +56,7 @@
             </div>
           </div>
           <button type="button" class="price" (click)="selectExperience(experience.id); $event.stopPropagation()">
-            <ng-container *ngIf="!isLesson; else bonusLabel">{{ experience.price }} EUR</ng-container>
-            <ng-template #bonusLabel>Bono</ng-template>
+            Bono
             <span aria-hidden="true">></span>
           </button>
           <span class="corner" *ngIf="selectedExperienceIds.includes(experience.id)" aria-hidden="true">✓</span>
@@ -155,16 +151,12 @@
               <dt>Hora</dt>
               <dd>{{ selectedHour }}</dd>
             </div>
-            <div *ngIf="isLesson && selectedExperiences.length > 0">
+            <div *ngIf="selectedExperiences.length > 0">
               <dt>Pago</dt>
               <dd>{{ selectedExperiences.length }} bono{{ selectedExperiences.length === 1 ? '' : 's' }}</dd>
             </div>
           </dl>
-          <div class="total" *ngIf="!isLesson && selectedExperiences.length > 0">
-            <span>Total</span>
-            <strong>{{ total | number:'1.2-2' }} EUR</strong>
-          </div>
-          <div class="total bonus-total" *ngIf="isLesson && selectedExperiences.length > 0">
+          <div class="total bonus-total" *ngIf="selectedExperiences.length > 0">
             <span>Bonos tras reservar</span>
             <strong>{{ lessonBonuses >= selectedExperiences.length ? lessonBonuses - selectedExperiences.length : 0 }}</strong>
           </div>
@@ -305,8 +297,8 @@
         <strong>{{ confirmedReservationsCount }}</strong>
       </article>
       <article>
-        <span>Ingresos rutas</span>
-        <strong>{{ totalRevenue | number:'1.0-0' }} EUR</strong>
+        <span>Bonos disponibles</span>
+        <strong>{{ totalUserBonuses }}</strong>
       </article>
       <article>
         <span>Clases hoy</span>
@@ -350,9 +342,9 @@
       <div class="section-actions">
         <div>
           <h2>Experiencias</h2>
-          <p>Activa, pausa o edita las rutas y clases que ve el cliente.</p>
+          <p>Activa, pausa o edita las clases que ve el cliente.</p>
         </div>
-        <button class="pay-button compact-action" type="button" (click)="openExperienceModal()">Nueva experiencia</button>
+        <button class="pay-button compact-action" type="button" (click)="openExperienceModal()">Nueva clase</button>
       </div>
 
       <div class="admin-card-grid">
@@ -501,16 +493,9 @@
     <div class="modal-backdrop" *ngIf="isExperienceModalOpen" (click)="closeExperienceModal()">
       <section class="experience-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeExperienceModal()">x</button>
-        <p class="eyebrow">{{ editingExperience ? 'Editar experiencia' : 'Nueva experiencia' }}</p>
-        <h2>{{ editingExperience ? editingExperience.title : 'Crear experiencia' }}</h2>
+        <p class="eyebrow">{{ editingExperience ? 'Editar clase' : 'Nueva clase' }}</p>
+        <h2>{{ editingExperience ? editingExperience.title : 'Crear clase' }}</h2>
         <form class="experience-form" (ngSubmit)="saveExperience()">
-          <label>
-            Tipo
-            <select name="experienceType" [(ngModel)]="experienceForm.type">
-              <option value="routes">Ruta</option>
-              <option value="lessons">Clase</option>
-            </select>
-          </label>
           <label>
             Titulo
             <input type="text" name="experienceTitle" [(ngModel)]="experienceForm.title" required>
