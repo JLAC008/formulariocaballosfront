@@ -47,6 +47,7 @@ interface CustomerUser {
 interface BookingHistoryItem {
   id: number;
   userId: number | null;
+  experienceId?: number;
   type: BookingType;
   title: string;
   date: string;
@@ -154,6 +155,10 @@ export class AppComponent {
     return this.selectedExperiences.map((experience) => experience.title).join(', ');
   }
 
+  get selectedExperience(): Experience | null {
+    return this.selectedExperiences[0] || null;
+  }
+
   get availableHours(): string[] {
     if (this.selectedExperiences.length > 0) {
       return this.getExperienceHours(this.selectedExperiences[0]);
@@ -253,11 +258,15 @@ export class AppComponent {
   }
 
   get hasCurrentUserBookedSelectedSlot(): boolean {
-    return this.hasCurrentUserBookedSlot(this.toDateKey(this.selectedDate), this.selectedHour);
+    return this.selectedExperience
+      ? this.hasCurrentUserBookedSlot(this.selectedExperience, this.toDateKey(this.selectedDate), this.selectedHour)
+      : false;
   }
 
   get isSelectedSlotFull(): boolean {
-    return this.isSlotFull(this.toDateKey(this.selectedDate), this.selectedHour);
+    return this.selectedExperience
+      ? this.isSlotFull(this.selectedExperience, this.toDateKey(this.selectedDate), this.selectedHour)
+      : false;
   }
 
   get isSelectedSlotPast(): boolean {
@@ -506,6 +515,7 @@ export class AppComponent {
     const booking: BookingHistoryItem = {
       id: Date.now(),
       userId: customer?.id || null,
+      experienceId: this.selectedExperience?.id,
       type: 'lessons',
       title: this.selectedExperienceTitle,
       date: this.formattedDate,
@@ -642,7 +652,7 @@ export class AppComponent {
     }
 
     const experienceId = this.deletingExperience.id;
-    const experienceTitle = this.deletingExperience.title;
+    const deletingExperience = this.deletingExperience;
     const bookingsToRefund = this.getDeletableExperienceBookings(this.deletingExperience);
     const refunds = new Map<number, number>();
 
@@ -658,7 +668,7 @@ export class AppComponent {
       ...user,
       bonuses: user.bonuses + (refunds.get(user.id) || 0)
     }));
-    this.bookingHistory = this.bookingHistory.map((booking) => booking.title === experienceTitle && booking.status === 'CONFIRMED'
+    this.bookingHistory = this.bookingHistory.map((booking) => this.isBookingForExperience(booking, deletingExperience) && booking.status === 'CONFIRMED'
       ? { ...booking, status: 'CANCELLED' }
       : booking);
     this.experiences = this.experiences.filter((item) => item.id !== experienceId);
@@ -679,7 +689,7 @@ export class AppComponent {
       .filter((experience) => experience.active)
       .map((experience) => ({
         experience,
-        hour: this.getExperienceHours(experience).find((hour) => !this.isSlotFull(this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour))
+        hour: this.getExperienceHours(experience).find((hour) => !this.isSlotFull(experience, this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour))
       }))
       .find((option) => option.hour);
 
@@ -690,6 +700,7 @@ export class AppComponent {
     this.bookingHistory = [{
       id: Date.now(),
       userId: null,
+      experienceId: reservationOption.experience.id,
       type: reservationOption.experience.type,
       title: reservationOption.experience.title,
       date: this.formatDateFromKey(this.adminDate),
@@ -730,7 +741,7 @@ export class AppComponent {
   }
 
   private getDeletableExperienceBookings(experience: Experience): BookingHistoryItem[] {
-    return this.bookingHistory.filter((booking) => booking.title === experience.title && booking.status === 'CONFIRMED');
+    return this.bookingHistory.filter((booking) => this.isBookingForExperience(booking, experience) && booking.status === 'CONFIRMED');
   }
 
   private getBookingBonusAmount(booking: BookingHistoryItem): number {
@@ -828,7 +839,7 @@ export class AppComponent {
 
   isHourBooked(hour: string): boolean {
     const dateKey = this.toDateKey(this.selectedDate);
-    return this.isSlotFull(dateKey, hour) || this.isSlotPast(dateKey, hour);
+    return (this.selectedExperience ? this.isSlotFull(this.selectedExperience, dateKey, hour) : false) || this.isSlotPast(dateKey, hour);
   }
 
   toggleExperienceHour(hour: string): void {
@@ -880,7 +891,7 @@ export class AppComponent {
     };
   }
 
-  private hasCurrentUserBookedSlot(dateKey: string, hour: string): boolean {
+  private hasCurrentUserBookedSlot(experience: Experience, dateKey: string, hour: string): boolean {
     if (!this.currentUserId) {
       return false;
     }
@@ -888,23 +899,29 @@ export class AppComponent {
     return this.bookingHistory.some((booking) =>
       booking.dateKey === dateKey
       && booking.hour === hour
+      && this.isBookingForExperience(booking, experience)
       && booking.userId === this.currentUserId
       && booking.status !== 'CANCELLED'
       && this.isBookingReminderActive(booking)
     );
   }
 
-  private isSlotFull(dateKey: string, hour: string): boolean {
-    return this.getSlotBookingsCount(dateKey, hour) >= MAX_BOOKINGS_PER_SLOT;
+  private isSlotFull(experience: Experience, dateKey: string, hour: string): boolean {
+    return this.getSlotBookingsCount(experience, dateKey, hour) >= MAX_BOOKINGS_PER_SLOT;
   }
 
-  private getSlotBookingsCount(dateKey: string, hour: string): number {
+  private getSlotBookingsCount(experience: Experience, dateKey: string, hour: string): number {
     return this.bookingHistory.filter((booking) =>
       booking.dateKey === dateKey
       && booking.hour === hour
+      && this.isBookingForExperience(booking, experience)
       && booking.status !== 'CANCELLED'
       && this.isBookingReminderActive(booking)
     ).length;
+  }
+
+  private isBookingForExperience(booking: BookingHistoryItem, experience: Experience): boolean {
+    return booking.experienceId ? booking.experienceId === experience.id : booking.title === experience.title;
   }
 
   private isSlotPast(dateKey: string, hour: string): boolean {
