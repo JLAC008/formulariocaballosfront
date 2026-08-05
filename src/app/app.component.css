@@ -756,6 +756,29 @@ dd {
   font-weight: 700;
 }
 
+.reservation-notice {
+  background: rgba(184, 134, 35, 0.1);
+  border: 1px solid rgba(184, 134, 35, 0.28);
+  color: #5f4a3d;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+}
+
+.reservation-notice strong {
+  color: var(--gold-deep);
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.reservation-notice p {
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .modal-action {
   margin-top: 4px;
 }
@@ -1427,6 +1450,20 @@ dd {
   margin-top: 0;
   min-height: 32px;
   white-space: nowrap;
+}
+
+.hour-message-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.hour-message-list label {
+  margin-top: 0;
+}
+
+.hour-message-list textarea {
+  min-height: 68px;
 }
 
 .check-line {

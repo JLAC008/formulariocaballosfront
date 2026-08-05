@@ -215,6 +215,10 @@
             <dd>{{ selectedHour }}</dd>
           </div>
         </dl>
+        <div class="reservation-notice" *ngIf="reservationNoticeMessage">
+          <strong>Importante</strong>
+          <p>{{ reservationNoticeMessage }}</p>
+        </div>
         <button class="pay-button modal-action" type="button" (click)="closeReservationModal()">Aceptar</button>
       </section>
     </div>
@@ -545,6 +549,20 @@
               <button class="history-action" type="button" (click)="addCustomExperienceHour()">Anadir franja</button>
             </div>
             <p class="limit-note">Las franjas anadidas aqui solo se guardan en esta clase.</p>
+          </div>
+          <div class="form-field" *ngIf="editableExperienceSelectedHours.length > 0">
+            <span>Mensajes por franja</span>
+            <div class="hour-message-list">
+              <label *ngFor="let hour of editableExperienceSelectedHours">
+                {{ hour }}
+                <textarea
+                  [name]="'hourMessage' + hour"
+                  [ngModel]="getExperienceHourMessage(hour)"
+                  (ngModelChange)="setExperienceHourMessage(hour, $event)"
+                  placeholder="Ejemplo: Por la manana adultos. Llegad media hora antes para preparar el equipo."
+                ></textarea>
+              </label>
+            </div>
           </div>
           <label class="check-line">
             <input type="checkbox" name="experienceActive" [(ngModel)]="experienceForm.active">

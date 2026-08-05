@@ -19,6 +19,7 @@ interface Experience {
   image: string;
   active: boolean;
   hours: string[];
+  hourMessages?: Record<string, string>;
 }
 
 interface CalendarDay {
@@ -116,6 +117,7 @@ export class AppComponent {
   isHistoryModalOpen = false;
   isExperienceModalOpen = false;
   reservationMessage = '';
+  reservationNoticeMessage = '';
   customerName = this.currentUser?.name || 'Paco Martinez';
   phone = this.currentUser?.phone || '633 443 322';
   confirmation = '';
@@ -171,6 +173,10 @@ export class AppComponent {
 
   get editableExperienceHours(): string[] {
     return this.sortHours([...this.hours, ...this.getExperienceFormHours()]);
+  }
+
+  get editableExperienceSelectedHours(): string[] {
+    return this.getExperienceFormHours();
   }
 
   get monthLabel(): string {
@@ -504,6 +510,7 @@ export class AppComponent {
     this.persistBookings();
 
     this.reservationMessage = `Has reservado ${selectedCount} clase${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
+    this.reservationNoticeMessage = this.getSelectedHourMessage();
     this.isReservationModalOpen = true;
     this.confirmation = '';
     this.warning = this.lessonBonuses === 0
@@ -528,6 +535,7 @@ export class AppComponent {
 
   closeReservationModal(): void {
     this.isReservationModalOpen = false;
+    this.reservationNoticeMessage = '';
   }
 
   openHistoryModal(): void {
@@ -563,7 +571,13 @@ export class AppComponent {
 
   openExperienceModal(experience?: Experience): void {
     this.editingExperience = experience || null;
-    this.experienceForm = experience ? { ...experience, hours: this.getExperienceHours(experience) } : this.blankExperience();
+    this.experienceForm = experience
+      ? {
+          ...experience,
+          hours: this.getExperienceHours(experience),
+          hourMessages: this.sanitizeHourMessages(experience.hourMessages, this.getExperienceHours(experience))
+        }
+      : this.blankExperience();
     this.isExperienceModalOpen = true;
   }
 
@@ -579,7 +593,8 @@ export class AppComponent {
       ...this.experienceForm,
       type: 'lessons' as BookingType,
       price: Number(this.experienceForm.price),
-      hours: this.sanitizeExperienceHours(this.experienceForm.hours)
+      hours: this.sanitizeExperienceHours(this.experienceForm.hours),
+      hourMessages: this.sanitizeHourMessages(this.experienceForm.hourMessages, this.experienceForm.hours)
     };
 
     if (this.editingExperience) {
@@ -714,7 +729,8 @@ export class AppComponent {
       .filter((experience) => experience.type === 'lessons')
       .map((experience) => ({
         ...experience,
-        hours: this.getExperienceHours(experience)
+        hours: this.getExperienceHours(experience),
+        hourMessages: this.sanitizeHourMessages(experience.hourMessages, experience.hours)
       }));
   }
 
@@ -757,7 +773,10 @@ export class AppComponent {
       ...this.experienceForm,
       hours: currentHours.includes(hour)
         ? currentHours.filter((selectedHour) => selectedHour !== hour)
-        : [...currentHours, hour]
+        : this.sortHours([...currentHours, hour]),
+      hourMessages: currentHours.includes(hour)
+        ? this.removeHourMessage(hour)
+        : { ...(this.experienceForm.hourMessages || {}) }
     };
   }
 
@@ -773,9 +792,24 @@ export class AppComponent {
 
     this.experienceForm = {
       ...this.experienceForm,
-      hours: this.sortHours([...this.getExperienceFormHours(), hour])
+      hours: this.sortHours([...this.getExperienceFormHours(), hour]),
+      hourMessages: { ...(this.experienceForm.hourMessages || {}) }
     };
     this.customExperienceHour = '';
+  }
+
+  getExperienceHourMessage(hour: string): string {
+    return this.experienceForm.hourMessages?.[hour] || '';
+  }
+
+  setExperienceHourMessage(hour: string, message: string): void {
+    this.experienceForm = {
+      ...this.experienceForm,
+      hourMessages: {
+        ...(this.experienceForm.hourMessages || {}),
+        [hour]: message
+      }
+    };
   }
 
   private hasCurrentUserBookedSlot(dateKey: string, hour: string): boolean {
@@ -826,8 +860,27 @@ export class AppComponent {
     return validHours.length > 0 ? validHours : [...this.hours];
   }
 
+  private sanitizeHourMessages(messages?: Record<string, string>, hours?: string[]): Record<string, string> {
+    const validHours = new Set(this.sanitizeExperienceHours(hours));
+    return Object.fromEntries(
+      Object.entries(messages || {})
+        .map(([hour, message]) => [hour, message.trim()])
+        .filter(([hour, message]) => validHours.has(hour) && message.length > 0)
+    );
+  }
+
   private getExperienceFormHours(): string[] {
     return this.sortHours((this.experienceForm.hours || []).filter((hour) => this.isValidHour(hour)));
+  }
+
+  private removeHourMessage(hour: string): Record<string, string> {
+    const { [hour]: removed, ...messages } = this.experienceForm.hourMessages || {};
+    return messages;
+  }
+
+  private getSelectedHourMessage(): string {
+    const selectedExperience = this.selectedExperiences[0];
+    return selectedExperience?.hourMessages?.[this.selectedHour]?.trim() || '';
   }
 
   private isValidHour(hour: string): boolean {
@@ -870,7 +923,8 @@ export class AppComponent {
       price: 45,
       image: 'assets/route-sendero.jpg',
       active: true,
-      hours: [...this.hours]
+      hours: [...this.hours],
+      hourMessages: {}
     };
   }
 
@@ -886,7 +940,8 @@ export class AppComponent {
         price: 38,
         image: 'assets/route-sendero.jpg',
         active: true,
-        hours: ['11:00', '18:00', '18:45', '19:30']
+        hours: ['11:00', '18:00', '18:45', '19:30'],
+        hourMessages: {}
       },
       {
         id: 2,
@@ -898,7 +953,8 @@ export class AppComponent {
         price: 55,
         image: 'assets/route-crepusculo.jpg',
         active: true,
-        hours: ['11:00', '18:00', '18:45', '19:30']
+        hours: ['11:00', '18:00', '18:45', '19:30'],
+        hourMessages: {}
       }
     ];
   }
