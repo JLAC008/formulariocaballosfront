@@ -359,8 +359,9 @@
           <div class="admin-card-actions">
             <button class="buy-button" type="button" (click)="openExperienceModal(experience)">Editar</button>
             <button class="history-action" type="button" (click)="toggleExperience(experience)">
-              {{ experience.active ? 'Pausar' : 'Activar' }}
+              {{ experience.active ? 'Desactivar' : 'Activar' }}
             </button>
+            <button class="history-action danger-action" type="button" (click)="openDeleteExperienceModal(experience)">Eliminar</button>
           </div>
         </article>
       </div>
@@ -556,6 +557,25 @@
           </label>
           <button class="pay-button" type="submit">Guardar</button>
         </form>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isDeleteExperienceModalOpen" (click)="closeDeleteExperienceModal()">
+      <section class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeDeleteExperienceModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Eliminar clase</p>
+        <h2 id="delete-modal-title">{{ deletingExperience?.title }}</h2>
+        <p class="modal-copy" *ngIf="deletingExperienceReservationsCount === 0">
+          Esta clase no tiene reservas asociadas.
+        </p>
+        <p class="modal-copy" *ngIf="deletingExperienceReservationsCount > 0">
+          Esta clase tiene {{ deletingExperienceReservationsCount }} reserva{{ deletingExperienceReservationsCount === 1 ? '' : 's' }} confirmada{{ deletingExperienceReservationsCount === 1 ? '' : 's' }}.
+          Se cancelaran y se devolveran {{ deletingExperienceRefundBonusesCount }} bono{{ deletingExperienceRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
+        </p>
+        <div class="delete-modal-actions">
+          <button class="history-action" type="button" (click)="closeDeleteExperienceModal()">Cancelar</button>
+          <button class="history-action danger-action" type="button" (click)="confirmDeleteExperience()">Eliminar clase</button>
+        </div>
       </section>
     </div>
   </main>

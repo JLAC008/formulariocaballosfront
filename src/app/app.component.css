@@ -1315,6 +1315,11 @@ dd {
   min-width: 140px;
 }
 
+.danger-action {
+  border-color: rgba(138, 62, 43, 0.45);
+  color: #7a3f2c;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -1392,9 +1397,35 @@ dd {
   width: min(100%, 620px);
 }
 
+.delete-modal {
+  background: #fffaf3;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 70px rgba(47, 38, 31, 0.22);
+  max-width: 460px;
+  padding: 30px;
+  position: relative;
+  width: min(100%, 460px);
+}
+
 .experience-modal h2 {
   font-size: 36px;
   margin-bottom: 18px;
+}
+
+.delete-modal h2 {
+  color: #2f261f;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0 44px 14px 0;
+}
+
+.delete-modal-actions {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 20px;
 }
 
 .experience-form {

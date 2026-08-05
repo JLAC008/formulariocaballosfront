@@ -116,6 +116,7 @@ export class AppComponent {
   isReservationModalOpen = false;
   isHistoryModalOpen = false;
   isExperienceModalOpen = false;
+  isDeleteExperienceModalOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
   customerName = this.currentUser?.name || 'Paco Martinez';
@@ -129,6 +130,7 @@ export class AppComponent {
   authError = '';
   reservationFilter: 'all' | ReservationStatus = 'all';
   editingExperience: Experience | null = null;
+  deletingExperience: Experience | null = null;
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
 
@@ -301,6 +303,16 @@ export class AppComponent {
       .filter((booking) => booking.status !== 'CANCELLED')
       .forEach((booking) => counts.set(booking.title, (counts.get(booking.title) || 0) + 1));
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sin datos';
+  }
+
+  get deletingExperienceReservationsCount(): number {
+    return this.deletingExperience ? this.getExperienceReservationsCount(this.deletingExperience) : 0;
+  }
+
+  get deletingExperienceRefundBonusesCount(): number {
+    return this.deletingExperience
+      ? this.getDeletableExperienceBookings(this.deletingExperience).reduce((sum, booking) => sum + this.getBookingBonusAmount(booking), 0)
+      : 0;
   }
 
   showClient(): void {
@@ -614,6 +626,49 @@ export class AppComponent {
     this.selectedExperienceIds = this.selectedExperienceIds.filter((id) => id !== experience.id);
   }
 
+  openDeleteExperienceModal(experience: Experience): void {
+    this.deletingExperience = experience;
+    this.isDeleteExperienceModalOpen = true;
+  }
+
+  closeDeleteExperienceModal(): void {
+    this.deletingExperience = null;
+    this.isDeleteExperienceModalOpen = false;
+  }
+
+  confirmDeleteExperience(): void {
+    if (!this.deletingExperience) {
+      return;
+    }
+
+    const experienceId = this.deletingExperience.id;
+    const experienceTitle = this.deletingExperience.title;
+    const bookingsToRefund = this.getDeletableExperienceBookings(this.deletingExperience);
+    const refunds = new Map<number, number>();
+
+    bookingsToRefund.forEach((booking) => {
+      if (!booking.userId) {
+        return;
+      }
+
+      refunds.set(booking.userId, (refunds.get(booking.userId) || 0) + this.getBookingBonusAmount(booking));
+    });
+
+    this.users = this.users.map((user) => ({
+      ...user,
+      bonuses: user.bonuses + (refunds.get(user.id) || 0)
+    }));
+    this.bookingHistory = this.bookingHistory.map((booking) => booking.title === experienceTitle && booking.status === 'CONFIRMED'
+      ? { ...booking, status: 'CANCELLED' }
+      : booking);
+    this.experiences = this.experiences.filter((item) => item.id !== experienceId);
+    this.selectedExperienceIds = this.selectedExperienceIds.filter((id) => id !== experienceId);
+    this.persistUsers();
+    this.persistBookings();
+    this.persistExperiences();
+    this.closeDeleteExperienceModal();
+  }
+
   updateReservationStatus(id: number, status: ReservationStatus): void {
     this.bookingHistory = this.bookingHistory.map((booking) => booking.id === id ? { ...booking, status } : booking);
     this.persistBookings();
@@ -668,6 +723,19 @@ export class AppComponent {
 
   getUserReservationsCount(userId: number): number {
     return this.bookingHistory.filter((booking) => booking.userId === userId).length;
+  }
+
+  getExperienceReservationsCount(experience: Experience): number {
+    return this.getDeletableExperienceBookings(experience).length;
+  }
+
+  private getDeletableExperienceBookings(experience: Experience): BookingHistoryItem[] {
+    return this.bookingHistory.filter((booking) => booking.title === experience.title && booking.status === 'CONFIRMED');
+  }
+
+  private getBookingBonusAmount(booking: BookingHistoryItem): number {
+    const rawAmount = Number.parseInt(booking.payment, 10);
+    return Number.isNaN(rawAmount) ? 0 : rawAmount;
   }
 
   adjustUserBonuses(userId: number, delta: number): void {
