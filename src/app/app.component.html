@@ -122,16 +122,6 @@
         </div>
         <p class="limit-note">Los bonos se guardan en tu cuenta y se descuentan solo al reservar clases.</p>
 
-        <label *ngIf="!currentUser">
-          Nombre completo
-          <input type="text" [(ngModel)]="customerName">
-        </label>
-
-        <label *ngIf="!currentUser">
-          Telefono
-          <input type="tel" [(ngModel)]="phone">
-        </label>
-
         <div class="session-box" *ngIf="currentUser">
           <strong>{{ currentUser.name }}</strong>
           <span>{{ currentUser.email }}</span>
