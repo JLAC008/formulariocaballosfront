@@ -98,7 +98,14 @@ const MAX_BOOKINGS_PER_SLOT = 5;
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  readonly navItems = ['Inicio', 'Clases de equitacion', 'Sobre nosotros', 'Contacto'];
+  readonly navItems = [
+    { label: 'Nuestra escuela', url: 'https://martinezluna.es/nuestra-escuela/' },
+    { label: 'Consultoria', url: 'https://martinezluna.es/reservar-cita/' },
+    { label: 'Curso', url: 'https://martinezluna.es/curso-doma-de-iniciacion/' },
+    { label: 'Sobre mi', url: 'https://martinezluna.es/our-story/' },
+    { label: 'Tienda', url: 'https://martinezluna.es/tienda/' },
+    { label: 'Contacto', url: 'https://martinezluna.es/contact/' }
+  ];
   readonly weekDays = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
   readonly hours = ['11:00', '18:00', '18:45', '19:30'];
   readonly bonusPacks: BonusPack[] = [
@@ -126,6 +133,7 @@ export class AppComponent {
   isExperienceModalOpen = false;
   isDeleteExperienceModalOpen = false;
   isCancelClassModalOpen = false;
+  isAccountMenuOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
   customerName = this.currentUser?.name || 'Paco Martinez';
@@ -375,6 +383,7 @@ export class AppComponent {
 
   showClient(): void {
     this.view = 'client';
+    this.closeAccountMenu();
     window.history.replaceState({}, '', '/');
   }
 
@@ -382,6 +391,7 @@ export class AppComponent {
     this.view = 'login';
     this.authMode = mode;
     this.authError = '';
+    this.closeAccountMenu();
     window.history.replaceState({}, '', '/login');
   }
 
@@ -391,6 +401,7 @@ export class AppComponent {
       return;
     }
     this.view = 'admin';
+    this.closeAccountMenu();
     window.history.replaceState({}, '', '/admin');
   }
 
@@ -458,6 +469,7 @@ export class AppComponent {
 
   logout(): void {
     localStorage.removeItem(ADMIN_SESSION_KEY);
+    this.closeAccountMenu();
     this.showClient();
   }
 
@@ -468,6 +480,15 @@ export class AppComponent {
     this.phone = '633 443 322';
     this.warning = '';
     this.confirmation = '';
+    this.closeAccountMenu();
+  }
+
+  toggleAccountMenu(): void {
+    this.isAccountMenuOpen = !this.isAccountMenuOpen;
+  }
+
+  closeAccountMenu(): void {
+    this.isAccountMenuOpen = false;
   }
 
   selectExperience(id: number): void {
@@ -616,6 +637,7 @@ export class AppComponent {
       return;
     }
     this.removeExpiredBookings();
+    this.closeAccountMenu();
     this.isHistoryModalOpen = true;
   }
 

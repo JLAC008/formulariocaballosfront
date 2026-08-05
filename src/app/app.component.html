@@ -1,28 +1,31 @@
+<header class="site-navbar">
+  <button class="site-brand" type="button" aria-label="Martinez Luna reservas" (click)="showClient()">
+    <img src="assets/martinez-luna-logo.webp" alt="Martinez Luna">
+  </button>
+
+  <nav class="site-nav" aria-label="Martinez Luna">
+    <a *ngFor="let item of navItems" [href]="item.url">{{ item.label }}</a>
+  </nav>
+
+  <div class="site-menu-wrap">
+    <button class="site-menu-button" type="button" aria-label="Abrir opciones" [attr.aria-expanded]="isAccountMenuOpen" (click)="toggleAccountMenu()">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M20 21a8 8 0 0 0-16 0" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    </button>
+    <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
+      <button type="button" (click)="openHistoryModal()">Recordatorio</button>
+      <button type="button" *ngIf="!currentUser" (click)="showLogin('login')">Entrar</button>
+      <button type="button" *ngIf="currentUser" (click)="logoutCustomer()">Salir cliente</button>
+      <button type="button" *ngIf="view !== 'admin'" (click)="showAdmin()">Admin</button>
+      <button type="button" *ngIf="view === 'admin'" (click)="showClient()">Pantalla cliente</button>
+    </div>
+  </div>
+</header>
+
 <ng-container *ngIf="view === 'client'">
   <main class="booking-page">
-    <header class="topbar">
-      <a class="brand" href="#" aria-label="Centro Ecuestre Martinez Luna" (click)="showClient(); $event.preventDefault()">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M17 47c1-15 8-28 20-36 1 6 7 7 10 13 4 7 0 15-8 17-6 2-11-1-15-6" />
-          <path d="M24 17c-4 0-8 2-11 7" />
-          <path d="M39 23h.1" />
-        </svg>
-        <span>Centro Ecuestre<br><strong>Martinez Luna</strong></span>
-      </a>
-
-      <nav class="nav" aria-label="Principal">
-        <a *ngFor="let item of navItems" href="#booking">{{ item }}</a>
-      </nav>
-
-      <div class="top-actions">
-        <button class="history-action" type="button" (click)="openHistoryModal()">Recordatorio</button>
-        <button class="history-action" type="button" *ngIf="!currentUser" (click)="showLogin('login')">Entrar</button>
-        <button class="history-action" type="button" *ngIf="currentUser" (click)="logoutCustomer()">Salir</button>
-        <button class="history-action" type="button" (click)="showAdmin()">Admin</button>
-        <a class="outline-action" href="#booking">Reservar experiencia</a>
-      </div>
-    </header>
-
     <section class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
@@ -277,14 +280,10 @@
   <main class="admin-page">
     <header class="admin-topbar">
       <div>
-        <button class="back-link" type="button" (click)="showClient()">Ver pantalla cliente</button>
         <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
         <h1>Panel de administrador</h1>
       </div>
-      <div class="admin-actions">
-        <button class="buy-button" type="button" (click)="createAdminReservation()">Reserva rapida</button>
-        <button class="history-action" type="button" (click)="logout()">Cerrar sesion</button>
-      </div>
+      <button class="buy-button quick-reservation-action" type="button" (click)="createAdminReservation()">Reserva rapida</button>
     </header>
 
     <section class="admin-kpis">
