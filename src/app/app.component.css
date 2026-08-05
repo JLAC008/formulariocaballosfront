@@ -620,7 +620,11 @@ dd {
 }
 
 .selection-help {
-  margin: 12px 0 0;
+  margin: 12px 0 2px;
+}
+
+.summary-column > .pay-button {
+  margin-top: 16px;
 }
 
 .total {
