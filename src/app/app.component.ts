@@ -60,6 +60,13 @@ interface BookingHistoryItem {
   status: ReservationStatus;
 }
 
+interface AdminScheduleGroup {
+  key: string;
+  title: string;
+  hour: string;
+  bookings: BookingHistoryItem[];
+}
+
 const MONTH_NAMES = [
   'Enero',
   'Febrero',
@@ -118,6 +125,7 @@ export class AppComponent {
   isHistoryModalOpen = false;
   isExperienceModalOpen = false;
   isDeleteExperienceModalOpen = false;
+  isCancelClassModalOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
   customerName = this.currentUser?.name || 'Paco Martinez';
@@ -132,6 +140,7 @@ export class AppComponent {
   reservationFilter: 'all' | ReservationStatus = 'all';
   editingExperience: Experience | null = null;
   deletingExperience: Experience | null = null;
+  cancellingScheduleGroup: AdminScheduleGroup | null = null;
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
   userBonusAdjustments: Record<number, number> = {};
@@ -279,12 +288,43 @@ export class AppComponent {
       return [];
     }
     return this.bookingHistory
-      .filter((booking) => booking.userId === this.currentUserId && booking.status === 'CONFIRMED' && this.isBookingReminderActive(booking))
+      .filter((booking) =>
+        booking.userId === this.currentUserId
+        && (booking.status === 'CONFIRMED' || booking.status === 'CANCELLED')
+        && this.isBookingReminderActive(booking)
+      )
       .sort((first, second) => this.getBookingDateTime(first).getTime() - this.getBookingDateTime(second).getTime());
   }
 
   get adminDayReservations(): BookingHistoryItem[] {
     return this.bookingHistory.filter((booking) => booking.dateKey === this.adminDate && booking.status !== 'CANCELLED');
+  }
+
+  getAdminReservationsByHour(hour: string): BookingHistoryItem[] {
+    return this.adminDayReservations.filter((booking) => booking.hour === hour);
+  }
+
+  getAdminScheduleGroupsByHour(hour: string): AdminScheduleGroup[] {
+    const groups = new Map<string, AdminScheduleGroup>();
+
+    this.getAdminReservationsByHour(hour).forEach((booking) => {
+      const key = this.getBookingClassKey(booking);
+      const existingGroup = groups.get(key);
+
+      if (existingGroup) {
+        existingGroup.bookings = [...existingGroup.bookings, booking];
+        return;
+      }
+
+      groups.set(key, {
+        key,
+        title: booking.title,
+        hour,
+        bookings: [booking]
+      });
+    });
+
+    return [...groups.values()].sort((first, second) => first.title.localeCompare(second.title));
   }
 
   get filteredReservations(): BookingHistoryItem[] {
@@ -323,6 +363,14 @@ export class AppComponent {
     return this.deletingExperience
       ? this.getDeletableExperienceBookings(this.deletingExperience).reduce((sum, booking) => sum + this.getBookingBonusAmount(booking), 0)
       : 0;
+  }
+
+  get cancellingClassReservationsCount(): number {
+    return this.getCancellableScheduleGroupBookings().length;
+  }
+
+  get cancellingClassRefundBonusesCount(): number {
+    return this.getCancellableScheduleGroupBookings().reduce((sum, booking) => sum + this.getBookingBonusAmount(booking), 0);
   }
 
   showClient(): void {
@@ -680,6 +728,47 @@ export class AppComponent {
     this.closeDeleteExperienceModal();
   }
 
+  openCancelClassModal(group: AdminScheduleGroup): void {
+    this.cancellingScheduleGroup = group;
+    this.isCancelClassModalOpen = true;
+  }
+
+  closeCancelClassModal(): void {
+    this.cancellingScheduleGroup = null;
+    this.isCancelClassModalOpen = false;
+  }
+
+  confirmCancelClass(): void {
+    const bookingsToCancel = this.getCancellableScheduleGroupBookings();
+
+    if (bookingsToCancel.length === 0) {
+      this.closeCancelClassModal();
+      return;
+    }
+
+    const refunds = new Map<number, number>();
+    bookingsToCancel.forEach((booking) => {
+      if (!booking.userId) {
+        return;
+      }
+
+      refunds.set(booking.userId, (refunds.get(booking.userId) || 0) + this.getBookingBonusAmount(booking));
+    });
+
+    this.users = this.users.map((user) => ({
+      ...user,
+      bonuses: user.bonuses + (refunds.get(user.id) || 0)
+    }));
+    this.bookingHistory = this.bookingHistory.map((booking) =>
+      bookingsToCancel.some((cancelledBooking) => cancelledBooking.id === booking.id)
+        ? { ...booking, status: 'CANCELLED' }
+        : booking
+    );
+    this.persistUsers();
+    this.persistBookings();
+    this.closeCancelClassModal();
+  }
+
   updateReservationStatus(id: number, status: ReservationStatus): void {
     this.bookingHistory = this.bookingHistory.map((booking) => booking.id === id ? { ...booking, status } : booking);
     this.persistBookings();
@@ -748,6 +837,22 @@ export class AppComponent {
   private getBookingBonusAmount(booking: BookingHistoryItem): number {
     const rawAmount = Number.parseInt(booking.payment, 10);
     return Number.isNaN(rawAmount) ? 0 : rawAmount;
+  }
+
+  private getCancellableScheduleGroupBookings(): BookingHistoryItem[] {
+    const group = this.cancellingScheduleGroup;
+    const referenceBooking = group?.bookings[0];
+
+    if (!group || !referenceBooking) {
+      return [];
+    }
+
+    return this.bookingHistory.filter((booking) =>
+      booking.status === 'CONFIRMED'
+      && booking.dateKey === this.adminDate
+      && booking.hour === group.hour
+      && this.isSameBookingClass(booking, referenceBooking)
+    );
   }
 
   adjustUserBonuses(userId: number, delta: number): void {
@@ -933,6 +1038,18 @@ export class AppComponent {
 
   private isBookingForExperience(booking: BookingHistoryItem, experience: Experience): boolean {
     return booking.experienceId ? booking.experienceId === experience.id : booking.title === experience.title;
+  }
+
+  private getBookingClassKey(booking: BookingHistoryItem): string {
+    return booking.experienceId ? `experience:${booking.experienceId}` : `title:${booking.title}`;
+  }
+
+  private isSameBookingClass(booking: BookingHistoryItem, referenceBooking: BookingHistoryItem): boolean {
+    if (booking.experienceId && referenceBooking.experienceId) {
+      return booking.experienceId === referenceBooking.experienceId;
+    }
+
+    return booking.title === referenceBooking.title;
   }
 
   private isSlotPast(dateKey: string, hour: string): boolean {

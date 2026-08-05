@@ -1196,44 +1196,98 @@ dd {
 .schedule-board {
   border: 1px solid var(--line);
   display: grid;
-  grid-template-columns: 110px 1fr;
+  gap: 0;
 }
 
-.schedule-hours {
+.schedule-slot {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+}
+
+.schedule-slot + .schedule-slot {
+  border-top: 1px solid var(--line);
+}
+
+.schedule-slot-time {
   background: rgba(184, 134, 35, 0.08);
   border-right: 1px solid var(--line);
-  display: grid;
-}
-
-.schedule-hours span {
-  align-items: center;
-  border-bottom: 1px solid var(--line);
   color: #7b6c5f;
   display: flex;
-  font-size: 12px;
-  font-weight: 700;
-  min-height: 54px;
-  padding: 0 16px;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+  min-height: 74px;
+  padding: 14px 16px;
 }
 
-.schedule-list {
+.schedule-slot-time strong {
+  color: #2f261f;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.schedule-slot-time span {
+  color: #8a7d70;
+  font-size: 11px;
+}
+
+.schedule-slot-content {
   display: grid;
   gap: 10px;
-  min-height: 226px;
+  min-height: 74px;
   padding: 14px;
+}
+
+.schedule-class-card {
+  background: rgba(255, 252, 247, 0.78);
+  border: 1px solid rgba(184, 134, 35, 0.26);
+  border-left: 4px solid var(--gold);
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.schedule-class-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.schedule-class-header strong {
+  color: #2f261f;
+  display: block;
+  font-size: 15px;
+}
+
+.schedule-class-header span {
+  color: #8a7d70;
+  display: block;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.schedule-class-header .history-action {
+  min-height: 30px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.schedule-class-bookings {
+  display: grid;
+  gap: 7px;
 }
 
 .schedule-booking-card {
   background: rgba(255, 252, 247, 0.86);
-  border: 1px solid rgba(184, 134, 35, 0.3);
-  border-left: 4px solid var(--gold);
+  border: 1px solid var(--line);
   display: grid;
   gap: 5px;
-  padding: 12px 14px;
+  padding: 9px 11px;
 }
 
 .schedule-booking-card.lesson {
-  border-left-color: #6c532a;
+  border-color: rgba(184, 134, 35, 0.3);
 }
 
 .schedule-booking-card strong,
@@ -1565,11 +1619,13 @@ dd {
 @media (max-width: 560px) {
   .admin-kpis,
   .stats-grid,
-  .schedule-board {
+  .schedule-slot {
     grid-template-columns: 1fr;
   }
 
-  .schedule-hours {
-    display: none;
+  .schedule-slot-time {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
+    min-height: auto;
   }
 }
