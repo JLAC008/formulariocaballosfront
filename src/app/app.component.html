@@ -216,11 +216,16 @@
         <h2 id="history-modal-title">Recordatorio de reservas</h2>
         <p class="history-empty" *ngIf="visibleHistory.length === 0">No tienes reservas futuras.</p>
         <div class="history-list" *ngIf="visibleHistory.length > 0">
-          <article class="history-item" *ngFor="let booking of visibleHistory">
+          <article class="history-item" *ngFor="let booking of visibleHistory" [class.cancelled]="booking.status === 'CANCELLED'">
             <div>
               <strong>{{ booking.title }}</strong>
               <span>{{ getTypeLabel(booking.type) }} · {{ booking.date }}</span>
-              <span>{{ booking.hour }} · {{ booking.payment }} · {{ getStatusLabel(booking.status) }}</span>
+              <span>{{ booking.hour }} · {{ booking.payment }}</span>
+            </div>
+            <div class="history-status-row" [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span>{{ getStatusLabel(booking.status) }}</span>
+              <em *ngIf="booking.status === 'CANCELLED'">Bonos devueltos</em>
             </div>
           </article>
         </div>

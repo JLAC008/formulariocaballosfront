@@ -877,7 +877,12 @@ dd {
   background: rgba(255, 252, 247, 0.72);
   border: 1px solid var(--line);
   margin-bottom: 9px;
-  padding: 10px 12px;
+  padding: 12px 14px 13px;
+}
+
+.history-item.cancelled {
+  background: rgba(138, 62, 43, 0.055);
+  border-color: rgba(138, 62, 43, 0.24);
 }
 
 .history-item strong {
@@ -890,11 +895,53 @@ dd {
   margin-bottom: 5px;
 }
 
+.history-status-row {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  margin-top: 9px;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.history-status-row.cancelled {
+  background: rgba(138, 62, 43, 0.1);
+  color: #7a3f2c;
+}
+
+.history-status-row.confirmed {
+  background: rgba(184, 134, 35, 0.11);
+  color: var(--gold-deep);
+}
+
+.history-status-row em {
+  color: inherit;
+  font-size: 11px;
+  font-style: normal;
+  margin-left: auto;
+}
+
+.status-dot {
+  background: currentColor;
+  height: 6px;
+  width: 6px;
+}
+
 .history-item span {
   color: #6f675f;
   display: block;
   font-size: 11px;
   line-height: 1.45;
+}
+
+.history-item .history-status-row span {
+  color: inherit;
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 @media (max-width: 1180px) {
