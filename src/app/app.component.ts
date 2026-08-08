@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../environments/environment';
 
 type BookingType = 'lessons';
 type AppView = 'client' | 'login' | 'admin';
@@ -41,6 +43,7 @@ interface CustomerUser {
   phone: string;
   email: string;
   password: string;
+  role?: string;
   bonuses: number;
   createdAt: string;
 }
@@ -68,6 +71,19 @@ interface AdminScheduleGroup {
   bookings: BookingHistoryItem[];
 }
 
+interface AppState {
+  users: CustomerUser[];
+  experiences: Experience[];
+  bookingHistory: BookingHistoryItem[];
+}
+
+interface AuthResponse {
+  token: string;
+  username: string;
+  role: 'ADMIN' | 'CUSTOMER';
+  user: CustomerUser | null;
+}
+
 const MONTH_NAMES = [
   'Enero',
   'Febrero',
@@ -86,6 +102,8 @@ const MONTH_NAMES = [
 const LONG_WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 const ADMIN_SESSION_KEY = 'centro_ecuestre_admin_session';
 const CUSTOMER_SESSION_KEY = 'centro_ecuestre_customer_session';
+const AUTH_TOKEN_KEY = 'centro_ecuestre_auth_token';
+const AUTH_ROLE_KEY = 'centro_ecuestre_auth_role';
 const USERS_KEY = 'centro_ecuestre_users';
 const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
@@ -98,7 +116,10 @@ const MAX_BOOKINGS_PER_SLOT = 5;
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = environment.apiUrl;
+
   readonly navItems = [
     { label: 'Nuestra escuela', url: 'https://martinezluna.es/nuestra-escuela/' },
     { label: 'Consultoria', url: 'https://martinezluna.es/reservar-cita/' },
@@ -153,6 +174,11 @@ export class AppComponent {
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
   userBonusAdjustments: Record<number, number> = {};
+  private syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+  ngOnInit(): void {
+    this.loadRemoteState();
+  }
 
   get currentUser(): CustomerUser | null {
     return this.users.find((user) => user.id === this.currentUserId) || null;
@@ -438,26 +464,35 @@ export class AppComponent {
   login(): void {
     const email = this.loginUser.trim().toLowerCase();
 
-    if (email === 'admin' && this.loginPassword === 'admin') {
-      localStorage.setItem(ADMIN_SESSION_KEY, 'true');
-      localStorage.removeItem(CUSTOMER_SESSION_KEY);
-      this.currentUserId = null;
-      this.loginPassword = '';
-      this.authError = '';
-      this.showAdmin();
+    if (!email || !this.loginPassword) {
+      this.authError = 'Completa usuario/email y contrasena.';
       return;
     }
 
-    const user = this.users.find((item) => item.email.toLowerCase() === email && item.password === this.loginPassword);
-    if (!user) {
-      this.authError = 'Credenciales incorrectas.';
-      return;
-    }
+    this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, {
+      username: email,
+      password: this.loginPassword
+    }).subscribe({
+      next: (response) => {
+        this.storeAuth(response);
+        this.loginPassword = '';
+        this.authError = '';
 
-    this.setCurrentUser(user);
-    this.loginPassword = '';
-    this.authError = '';
-    this.showClient();
+        if (response.role === 'ADMIN') {
+          this.showAdmin();
+          return;
+        }
+
+        if (response.user) {
+          this.upsertUser(response.user);
+          this.setCurrentUser(response.user);
+        }
+        this.showClient();
+      },
+      error: (error) => {
+        this.authError = error?.error?.error || 'Credenciales incorrectas.';
+      }
+    });
   }
 
   register(): void {
@@ -471,31 +506,32 @@ export class AppComponent {
       return;
     }
 
-    if (this.users.some((user) => user.email.toLowerCase() === email)) {
-      this.authError = 'Ya existe un usuario con ese email.';
-      return;
-    }
-
-    const user: CustomerUser = {
-      id: Date.now(),
+    this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, {
       name,
       phone,
       email,
-      password,
-      bonuses: 0,
-      createdAt: new Date().toISOString()
-    };
-
-    this.users = [user, ...this.users];
-    this.persistUsers();
-    this.setCurrentUser(user);
-    this.loginPassword = '';
-    this.authError = '';
-    this.showClient();
+      password
+    }).subscribe({
+      next: (response) => {
+        this.storeAuth(response);
+        if (response.user) {
+          this.upsertUser(response.user);
+          this.setCurrentUser(response.user);
+        }
+        this.loginPassword = '';
+        this.authError = '';
+        this.showClient();
+      },
+      error: (error) => {
+        this.authError = error?.error?.error || 'No se pudo crear la cuenta.';
+      }
+    });
   }
 
   logout(): void {
     localStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_ROLE_KEY);
     this.closeAccountMenu();
     this.showClient();
   }
@@ -511,6 +547,8 @@ export class AppComponent {
 
   logoutCustomer(): void {
     localStorage.removeItem(CUSTOMER_SESSION_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_ROLE_KEY);
     this.currentUserId = null;
     this.customerName = 'Paco Martinez';
     this.phone = '633 443 322';
@@ -907,6 +945,27 @@ export class AppComponent {
     this.phone = user.phone;
   }
 
+  private storeAuth(response: AuthResponse): void {
+    localStorage.setItem(AUTH_TOKEN_KEY, response.token);
+    localStorage.setItem(AUTH_ROLE_KEY, response.role);
+
+    if (response.role === 'ADMIN') {
+      localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      localStorage.removeItem(CUSTOMER_SESSION_KEY);
+      this.currentUserId = null;
+      return;
+    }
+
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+  }
+
+  private upsertUser(user: CustomerUser): void {
+    const exists = this.users.some((item) => item.id === user.id);
+    this.users = exists
+      ? this.users.map((item) => item.id === user.id ? user : item)
+      : [user, ...this.users];
+  }
+
   private updateCurrentUserBonuses(delta: number): void {
     if (!this.currentUser) {
       return;
@@ -925,7 +984,7 @@ export class AppComponent {
   private getStoredCustomerId(): number | null {
     const raw = localStorage.getItem(CUSTOMER_SESSION_KEY);
     const id = raw ? Number(raw) : null;
-    return id && this.users.some((user) => user.id === id) ? id : null;
+    return id || null;
   }
 
   private getInitialView(): AppView {
@@ -936,15 +995,75 @@ export class AppComponent {
   }
 
   private persistUsers(): void {
-    localStorage.setItem(USERS_KEY, JSON.stringify(this.users));
+    this.syncRemoteState();
   }
 
   private persistBookings(): void {
-    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(this.bookingHistory));
+    this.syncRemoteState();
   }
 
   private persistExperiences(): void {
-    localStorage.setItem(EXPERIENCES_KEY, JSON.stringify(this.experiences));
+    this.syncRemoteState();
+  }
+
+  private loadRemoteState(): void {
+    this.http.get<AppState>(`${this.apiUrl}/state`).subscribe({
+      next: (state) => {
+        this.users = state.users || [];
+        this.experiences = (state.experiences || this.defaultExperiences()).map((experience) => ({
+          ...experience,
+          hours: this.getExperienceHours(experience),
+          hourMessages: this.sanitizeHourMessages(experience.hourMessages, experience.hours)
+        }));
+        this.bookingHistory = (state.bookingHistory || [])
+          .filter((booking) => booking.type === 'lessons' && this.isBookingReminderActive(booking));
+        const storedCustomerId = this.getStoredCustomerId();
+        this.currentUserId = storedCustomerId && this.users.some((user) => user.id === storedCustomerId)
+          ? storedCustomerId
+          : null;
+        this.customerName = this.currentUser?.name || 'Paco Martinez';
+        this.phone = this.currentUser?.phone || '633 443 322';
+        this.ensureSelectedHourAvailable();
+      },
+      error: () => {
+        this.warning = 'No se pudo conectar con el backend. Revisa que FormularioCaballosBackend este arrancado.';
+      }
+    });
+  }
+
+  private syncRemoteState(): void {
+    if (this.syncTimer) {
+      clearTimeout(this.syncTimer);
+    }
+
+    this.syncTimer = setTimeout(() => this.saveRemoteState(), 150);
+  }
+
+  private saveRemoteState(): void {
+    this.syncTimer = null;
+    const state: AppState = {
+      users: this.users,
+      experiences: this.experiences,
+      bookingHistory: this.bookingHistory
+    };
+
+    this.http.put<AppState>(`${this.apiUrl}/state`, state, {
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (savedState) => {
+        this.users = savedState.users || this.users;
+        this.experiences = savedState.experiences || this.experiences;
+        this.bookingHistory = savedState.bookingHistory || this.bookingHistory;
+      },
+      error: () => {
+        this.warning = 'No se pudieron guardar los cambios en el backend.';
+      }
+    });
+  }
+
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
   }
 
   private loadLessonExperiences(): Experience[] {
