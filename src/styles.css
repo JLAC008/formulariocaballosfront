@@ -1,12 +1,13 @@
 :root {
-  --ink: #2f261f;
-  --muted: #7c746d;
-  --line: #e7dac9;
-  --paper: #fbf6ef;
-  --panel: #fffaf3;
-  --gold: #b88623;
-  --gold-deep: #9d741c;
-  --shadow: 0 18px 45px rgba(60, 44, 27, 0.08);
+  --ink: #0f0f0f;
+  --muted: #6b6b6b;
+  --line: #e3ddd4;
+  --paper: #ffffff;
+  --panel: #ffffff;
+  --gold: #a78335;
+  --gold-deep: #80642a;
+  --soft: #f6f1e9;
+  --shadow: 0 18px 45px rgba(15, 15, 15, 0.08);
 }
 
 * {
@@ -22,7 +23,7 @@ body {
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: Inter, Arial, sans-serif;
+  font-family: "Open Sans", Arial, sans-serif;
 }
 
 button,

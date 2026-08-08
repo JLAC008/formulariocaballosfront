@@ -1,7 +1,7 @@
 <header class="site-navbar">
-  <button class="site-brand" type="button" aria-label="Martinez Luna reservas" (click)="showClient()">
+  <a class="site-brand" href="https://martinezluna.es/" aria-label="Martinez Luna">
     <img src="assets/martinez-luna-logo.webp" alt="Martinez Luna">
-  </button>
+  </a>
 
   <nav class="site-nav" aria-label="Martinez Luna">
     <a *ngFor="let item of navItems" [href]="item.url">{{ item.label }}</a>
@@ -15,13 +15,17 @@
       </svg>
     </button>
     <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
-      <ng-container *ngIf="currentUser; else guestAccountMenu">
+      <ng-container *ngIf="isCustomer">
         <button type="button" (click)="openHistoryModal()">Recordatorio</button>
-        <button type="button" (click)="logoutCustomer()">Cerrar sesion</button>
+        <button type="button" (click)="logoutCurrentSession()">Cerrar sesion</button>
       </ng-container>
-      <ng-template #guestAccountMenu>
+      <ng-container *ngIf="isAdmin">
+        <button type="button" (click)="showAdmin()">Panel administrador</button>
+        <button type="button" (click)="logoutCurrentSession()">Cerrar sesion</button>
+      </ng-container>
+      <ng-container *ngIf="isGuest">
         <button type="button" (click)="showLogin('login')">Iniciar sesion</button>
-      </ng-template>
+      </ng-container>
     </div>
   </div>
 </header>
@@ -62,7 +66,6 @@
           </div>
           <button type="button" class="price" (click)="selectExperience(experience.id); $event.stopPropagation()">
             Bono
-            <span aria-hidden="true">></span>
           </button>
           <span class="corner" *ngIf="selectedExperienceIds.includes(experience.id)" aria-hidden="true">✓</span>
         </article>
@@ -71,7 +74,7 @@
       </div>
 
       <div class="calendar-column">
-        <h2 class="section-title"><span aria-hidden="true">□</span> Elige la fecha</h2>
+        <h2 class="section-title">Elige la fecha</h2>
         <div class="month-switcher">
           <button type="button" aria-label="Mes anterior" [disabled]="!canGoPreviousMonth" (click)="changeMonth(-1)">&lt;</button>
           <strong>{{ monthLabel }}</strong>
@@ -99,7 +102,7 @@
         </div>
 
         <div class="time-section">
-          <h2 class="section-title"><span aria-hidden="true">◇</span> Elige la hora</h2>
+          <h2 class="section-title">Elige la hora</h2>
           <div class="hours">
             <button
               type="button"
@@ -120,7 +123,7 @@
       </div>
 
       <aside class="summary-column">
-        <h2 class="section-title"><span aria-hidden="true">♙</span> Bonos</h2>
+        <h2 class="section-title">Bonos</h2>
         <div class="bonus-box always-visible" [class.empty]="lessonBonuses === 0">
           <span>{{ currentUser ? 'Bonos de ' + currentUser.name : 'Inicia sesion para tener bonos' }}</span>
           <strong>{{ lessonBonuses }}</strong>
@@ -160,7 +163,7 @@
         </div>
 
         <button class="pay-button" type="button" [disabled]="!canReserve" (click)="reserve()">
-          {{ actionLabel }} <span aria-hidden="true">-></span>
+          {{ actionLabel }}
         </button>
         <button class="buy-button" type="button" (click)="openBonusModal()">Comprar mas bonos</button>
         <p class="secure">{{ actionHelpText }}</p>
@@ -225,12 +228,11 @@
             <div>
               <strong>{{ booking.title }}</strong>
               <span>{{ getTypeLabel(booking.type) }} · {{ booking.date }}</span>
-              <span>{{ booking.hour }} · {{ booking.payment }}</span>
-            </div>
-            <div class="history-status-row" [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">
-              <span class="status-dot" aria-hidden="true"></span>
-              <span>{{ getStatusLabel(booking.status) }}</span>
-              <em *ngIf="booking.status === 'CANCELLED'">Bonos devueltos</em>
+              <span class="history-meta-line">
+                {{ booking.hour }} · {{ booking.payment }}
+                <em [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">{{ getStatusLabel(booking.status) }}</em>
+                <small *ngIf="booking.status === 'CANCELLED'">Bonos devueltos</small>
+              </span>
             </div>
           </article>
         </div>
@@ -285,7 +287,6 @@
         <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
         <h1>Panel de administrador</h1>
       </div>
-      <button class="buy-button quick-reservation-action" type="button" (click)="createAdminReservation()">Reserva rapida</button>
     </header>
 
     <section class="admin-kpis">
@@ -319,7 +320,7 @@
       <div class="section-actions">
         <div>
           <h2>Agenda diaria</h2>
-          <p>Consulta la ocupacion del dia y crea una reserva rapida desde recepcion.</p>
+          <p>Consulta la ocupacion del dia y gestiona las clases programadas.</p>
         </div>
         <input type="date" [(ngModel)]="adminDate">
       </div>
@@ -328,21 +329,21 @@
         <div class="schedule-slot" *ngFor="let hour of adminScheduleHours">
           <div class="schedule-slot-time">
             <strong>{{ hour }}</strong>
-            <span>{{ getAdminReservationsByHour(hour).length }}/5 reservas</span>
+            <span>{{ getAdminConfirmedReservationsByHour(hour).length }}/5 confirmadas</span>
           </div>
           <div class="schedule-slot-content" *ngIf="getAdminScheduleGroupsByHour(hour) as scheduleGroups">
             <article *ngFor="let group of scheduleGroups" class="schedule-class-card">
               <div class="schedule-class-header">
                 <div>
                   <strong>{{ group.title }}</strong>
-                  <span>{{ group.bookings.length }}/5 reservas</span>
+                  <span>{{ group.bookings.length }} reserva{{ group.bookings.length === 1 ? '' : 's' }}</span>
                 </div>
-                <button class="history-action danger-action" type="button" (click)="openCancelClassModal(group)">Cancelar clase</button>
+                <button class="history-action danger-action" type="button" *ngIf="group.bookings[0].status === 'CONFIRMED'" (click)="openCancelClassModal(group)">Cancelar clase</button>
               </div>
               <div class="schedule-class-bookings">
-                <div *ngFor="let booking of group.bookings" class="schedule-booking-card" [class.lesson]="booking.type === 'lessons'">
+                <div *ngFor="let booking of group.bookings" class="schedule-booking-card" [class.lesson]="booking.type === 'lessons'" [class.cancelled]="booking.status === 'CANCELLED'">
                   <span>{{ booking.customerName }} - {{ booking.phone }}</span>
-                  <em>{{ booking.payment }}</em>
+                  <em>{{ booking.payment }} · {{ getStatusLabel(booking.status) }}</em>
                 </div>
               </div>
             </article>

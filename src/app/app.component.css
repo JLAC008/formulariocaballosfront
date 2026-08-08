@@ -21,11 +21,9 @@
 
 .site-brand {
   align-items: center;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
   display: inline-flex;
   padding: 0;
+  text-decoration: none;
 }
 
 .site-brand img {
@@ -949,38 +947,6 @@ dd {
   margin-bottom: 5px;
 }
 
-.history-status-row {
-  align-items: center;
-  display: flex;
-  gap: 7px;
-  margin-top: 9px;
-  min-height: 28px;
-  padding: 0 10px;
-}
-
-.history-status-row.cancelled {
-  background: rgba(138, 62, 43, 0.1);
-  color: #7a3f2c;
-}
-
-.history-status-row.confirmed {
-  background: rgba(184, 134, 35, 0.11);
-  color: var(--gold-deep);
-}
-
-.history-status-row em {
-  color: inherit;
-  font-size: 11px;
-  font-style: normal;
-  margin-left: auto;
-}
-
-.status-dot {
-  background: currentColor;
-  height: 6px;
-  width: 6px;
-}
-
 .history-item span {
   color: #6f675f;
   display: block;
@@ -988,14 +954,44 @@ dd {
   line-height: 1.45;
 }
 
-.history-item .history-status-row span {
-  color: inherit;
-  display: inline-flex;
+.history-meta-line {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.history-meta-line em {
   font-size: 10px;
+  font-style: normal;
   font-weight: 800;
-  letter-spacing: 1.1px;
-  line-height: 1;
+  letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+.history-meta-line em::before {
+  content: "·";
+  font-weight: 400;
+  margin-right: 7px;
+}
+
+.history-meta-line em.confirmed {
+  color: #80642a;
+}
+
+.history-meta-line em.cancelled,
+.history-meta-line small {
+  color: #7a3f2c;
+}
+
+.history-meta-line small {
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+.history-meta-line small::before {
+  content: "·";
+  margin-right: 8px;
 }
 
 @media (max-width: 1180px) {
@@ -1195,11 +1191,6 @@ dd {
   justify-content: space-between;
 }
 
-.quick-reservation-action {
-  margin-top: 0;
-  max-width: 190px;
-}
-
 .admin-kpis {
   display: grid;
   gap: 14px;
@@ -1390,6 +1381,11 @@ dd {
 
 .schedule-booking-card.lesson {
   border-color: rgba(184, 134, 35, 0.3);
+}
+
+.schedule-booking-card.cancelled {
+  background: #f8eeee;
+  border-color: #d9b8b0;
 }
 
 .schedule-booking-card strong,
@@ -1730,4 +1726,180 @@ dd {
     border-right: 0;
     min-height: auto;
   }
+}
+
+/* Martinez Luna theme */
+.site-navbar {
+  background: #fff;
+  border-bottom-color: #e3ddd4;
+}
+
+.booking-page {
+  background: #fff;
+}
+
+.hero::before {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.72) 34%, rgba(255, 255, 255, 0.08) 62%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, rgba(15, 15, 15, 0.03), rgba(15, 15, 15, 0));
+}
+
+.eyebrow,
+.modal-eyebrow,
+.back-link {
+  color: #80642a;
+  font-family: "Open Sans", Arial, sans-serif;
+  font-weight: 700;
+}
+
+.hero h1,
+.experience-info h2,
+.summary h2,
+.section-title,
+.bonus-modal h2,
+.reservation-modal h2,
+.history-modal h2,
+.auth-card h1,
+.admin-topbar h1,
+.admin-section h2,
+.experience-modal h2,
+.delete-modal h2,
+.session-box strong,
+.history-item strong,
+.admin-experience-card h3 {
+  color: #0f0f0f;
+  font-family: Vollkorn, Georgia, serif;
+  font-weight: 400;
+}
+
+.hero h1 span,
+.total strong,
+.bonus-pack-grid strong,
+.admin-kpis strong,
+.stats-grid strong {
+  color: #474747;
+}
+
+.intro,
+.experience-info p,
+.availability,
+.time-section p,
+.secure,
+.limit-note,
+.auth-copy,
+.demo-note,
+.section-actions p,
+.modal-copy,
+.history-empty,
+.selection-empty,
+.selection-help {
+  color: #6b6b6b;
+}
+
+.experience-card,
+.session-box,
+.bonus-box,
+.summary,
+.history-item,
+.admin-topbar,
+.admin-kpis article,
+.stats-grid article,
+.admin-section,
+.admin-experience-card,
+.schedule-board,
+.schedule-class-card,
+.schedule-booking-card,
+.auth-card,
+.bonus-modal,
+.reservation-modal,
+.history-modal,
+.experience-modal,
+.delete-modal {
+  background: #fff;
+  border-color: #e3ddd4;
+  box-shadow: none;
+}
+
+.experience-card:hover,
+.experience-card.selected,
+.bonus-pack-grid button:hover {
+  border-color: #0f0f0f;
+  box-shadow: 0 16px 38px rgba(15, 15, 15, 0.08);
+}
+
+.outline-action,
+.history-action,
+.buy-button,
+.price,
+.compact-action {
+  border-color: #0f0f0f;
+  color: #0f0f0f;
+}
+
+.primary-action,
+.pay-button,
+.hours button.active,
+.calendar-grid button.active,
+.auth-switch button.active,
+.time-slot-grid button.active {
+  background: #0f0f0f;
+  border-color: #0f0f0f;
+  color: #fff;
+}
+
+.buy-button,
+.history-action,
+.hours button,
+input,
+select,
+textarea,
+.time-slot-grid button,
+.bonus-pack-grid button {
+  background: #fff;
+  border-color: #e3ddd4;
+  color: #0f0f0f;
+}
+
+.bonus-box,
+.type-pill,
+.schedule-slot-time,
+.reservation-notice,
+.confirmation {
+  background: #f6f1e9;
+  border-color: #e3ddd4;
+  color: #80642a;
+}
+
+.bonus-box.empty,
+.warning,
+.history-item.cancelled,
+.schedule-booking-card.cancelled {
+  background: #f8eeee;
+  border-color: #d9b8b0;
+  color: #7a3f2c;
+}
+
+.corner {
+  background: #0f0f0f;
+}
+
+.meta span::before,
+.section-title span,
+.date-line span,
+.admin-card-meta strong,
+.admin-tabs button.active {
+  color: #80642a;
+}
+
+.admin-tabs button.active {
+  border-bottom-color: #0f0f0f;
+}
+
+.schedule-class-card {
+  border-left-color: #0f0f0f;
+}
+
+.danger-action {
+  border-color: #7a3f2c;
+  color: #7a3f2c;
 }

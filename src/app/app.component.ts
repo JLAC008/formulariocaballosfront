@@ -7,6 +7,7 @@ type AppView = 'client' | 'login' | 'admin';
 type AdminTab = 'schedule' | 'experiences' | 'reservations' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 type AuthMode = 'login' | 'register';
+type UserRole = 'guest' | 'customer' | 'admin';
 
 interface Experience {
   id: number;
@@ -157,6 +158,26 @@ export class AppComponent {
     return this.users.find((user) => user.id === this.currentUserId) || null;
   }
 
+  get currentRole(): UserRole {
+    if (this.isAdminLoggedIn()) {
+      return 'admin';
+    }
+
+    return this.currentUser ? 'customer' : 'guest';
+  }
+
+  get isGuest(): boolean {
+    return this.currentRole === 'guest';
+  }
+
+  get isCustomer(): boolean {
+    return this.currentRole === 'customer';
+  }
+
+  get isAdmin(): boolean {
+    return this.currentRole === 'admin';
+  }
+
   get lessonBonuses(): number {
     return this.currentUser?.bonuses || 0;
   }
@@ -301,15 +322,19 @@ export class AppComponent {
         && (booking.status === 'CONFIRMED' || booking.status === 'CANCELLED')
         && this.isBookingReminderActive(booking)
       )
-      .sort((first, second) => this.getBookingDateTime(first).getTime() - this.getBookingDateTime(second).getTime());
+      .sort((first, second) => this.getBookingDateTime(second).getTime() - this.getBookingDateTime(first).getTime());
   }
 
   get adminDayReservations(): BookingHistoryItem[] {
-    return this.bookingHistory.filter((booking) => booking.dateKey === this.adminDate && booking.status !== 'CANCELLED');
+    return this.bookingHistory.filter((booking) => booking.dateKey === this.adminDate);
   }
 
   getAdminReservationsByHour(hour: string): BookingHistoryItem[] {
     return this.adminDayReservations.filter((booking) => booking.hour === hour);
+  }
+
+  getAdminConfirmedReservationsByHour(hour: string): BookingHistoryItem[] {
+    return this.getAdminReservationsByHour(hour).filter((booking) => booking.status === 'CONFIRMED');
   }
 
   getAdminScheduleGroupsByHour(hour: string): AdminScheduleGroup[] {
@@ -348,7 +373,7 @@ export class AppComponent {
   }
 
   get pendingLessonsToday(): number {
-    return this.adminDayReservations.length;
+    return this.adminDayReservations.filter((booking) => booking.status === 'CONFIRMED').length;
   }
 
   get totalUserBonuses(): number {
@@ -415,6 +440,8 @@ export class AppComponent {
 
     if (email === 'admin' && this.loginPassword === 'admin') {
       localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+      localStorage.removeItem(CUSTOMER_SESSION_KEY);
+      this.currentUserId = null;
       this.loginPassword = '';
       this.authError = '';
       this.showAdmin();
@@ -471,6 +498,15 @@ export class AppComponent {
     localStorage.removeItem(ADMIN_SESSION_KEY);
     this.closeAccountMenu();
     this.showClient();
+  }
+
+  logoutCurrentSession(): void {
+    if (this.isAdmin) {
+      this.logout();
+      return;
+    }
+
+    this.logoutCustomer();
   }
 
   logoutCustomer(): void {
@@ -796,37 +832,6 @@ export class AppComponent {
     this.persistBookings();
   }
 
-  createAdminReservation(): void {
-    const reservationOption = this.experiences
-      .filter((experience) => experience.active)
-      .map((experience) => ({
-        experience,
-        hour: this.getExperienceHours(experience).find((hour) => !this.isSlotFull(experience, this.adminDate, hour) && !this.isSlotPast(this.adminDate, hour))
-      }))
-      .find((option) => option.hour);
-
-    if (!reservationOption || !reservationOption.hour) {
-      return;
-    }
-
-    this.bookingHistory = [{
-      id: Date.now(),
-      userId: null,
-      experienceId: reservationOption.experience.id,
-      type: reservationOption.experience.type,
-      title: reservationOption.experience.title,
-      date: this.formatDateFromKey(this.adminDate),
-      dateKey: this.adminDate,
-      hour: reservationOption.hour,
-      payment: '1 bono',
-      customerName: 'Reserva mostrador',
-      phone: '600 000 000',
-      amount: 0,
-      status: 'CONFIRMED'
-    }, ...this.bookingHistory];
-    this.persistBookings();
-  }
-
   getTypeLabel(type: BookingType): string {
     return 'Clase';
   }
@@ -895,6 +900,7 @@ export class AppComponent {
   }
 
   private setCurrentUser(user: CustomerUser): void {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
     this.currentUserId = user.id;
     localStorage.setItem(CUSTOMER_SESSION_KEY, String(user.id));
     this.customerName = user.name;
@@ -1063,7 +1069,8 @@ export class AppComponent {
   }
 
   private getBookingClassKey(booking: BookingHistoryItem): string {
-    return booking.experienceId ? `experience:${booking.experienceId}` : `title:${booking.title}`;
+    const classKey = booking.experienceId ? `experience:${booking.experienceId}` : `title:${booking.title}`;
+    return `${classKey}:status:${booking.status}`;
   }
 
   private isSameBookingClass(booking: BookingHistoryItem, referenceBooking: BookingHistoryItem): boolean {
