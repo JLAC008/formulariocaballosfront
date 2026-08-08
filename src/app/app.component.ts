@@ -101,7 +101,7 @@ const MAX_BOOKINGS_PER_SLOT = 5;
 export class AppComponent {
   readonly navItems = [
     { label: 'Nuestra escuela', url: 'https://martinezluna.es/nuestra-escuela/' },
-    { label: 'Consultoria', url: 'https://martinezluna.es/reservar-cita/' },
+    { label: 'Consultoría', url: 'https://martinezluna.es/reservar-cita/' },
     { label: 'Curso', url: 'https://martinezluna.es/curso-doma-de-iniciacion/' },
     { label: 'Sobre mi', url: 'https://martinezluna.es/our-story/' },
     { label: 'Tienda', url: 'https://martinezluna.es/tienda/' },
