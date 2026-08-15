@@ -38,9 +38,11 @@ interface BonusPack {
 interface CustomerUser {
   id: number;
   name: string;
+  firstName?: string;
+  lastName?: string;
   phone: string;
   email: string;
-  password: string;
+  password?: string;
   bonuses: number;
   createdAt: string;
 }
@@ -90,6 +92,11 @@ const USERS_KEY = 'centro_ecuestre_users';
 const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
 const MAX_BOOKINGS_PER_SLOT = 5;
+const API_URL = 'http://localhost:8081/api';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const SPANISH_PHONE_PATTERN = /^(?:\+34\s?)?[6789]\d{8}$/;
+const NAME_PATTERN = /^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+(?:[ '\-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*$/;
+const PASSWORD_PATTERN = /^(?=.*[a-záéíóúüñ])(?=.*[A-ZÁÉÍÓÚÜÑ])(?=.*\d).{8,}$/;
 
 @Component({
   selector: 'app-root',
@@ -144,6 +151,7 @@ export class AppComponent {
   loginUser = '';
   loginPassword = '';
   registerName = '';
+  registerLastName = '';
   registerPhone = '';
   authError = '';
   reservationFilter: 'all' | ReservationStatus = 'all';
@@ -153,6 +161,10 @@ export class AppComponent {
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
   userBonusAdjustments: Record<number, number> = {};
+
+  constructor() {
+    void this.loadRemoteExperiences();
+  }
 
   get currentUser(): CustomerUser | null {
     return this.users.find((user) => user.id === this.currentUserId) || null;
@@ -435,63 +447,150 @@ export class AppComponent {
     this.authError = '';
   }
 
-  login(): void {
+  async login(): Promise<void> {
     const email = this.loginUser.trim().toLowerCase();
 
-    if (email === 'admin' && this.loginPassword === 'admin') {
-      localStorage.setItem(ADMIN_SESSION_KEY, 'true');
-      localStorage.removeItem(CUSTOMER_SESSION_KEY);
-      this.currentUserId = null;
+    if (!EMAIL_PATTERN.test(email) || !this.loginPassword) {
+      this.authError = 'Introduce un email y una contraseña validos.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: this.loginPassword })
+      });
+      if (!response.ok) {
+        this.authError = 'Credenciales incorrectas o cuenta sin verificar.';
+        return;
+      }
+      const auth = await response.json();
+      localStorage.setItem('centro_ecuestre_token', auth.token);
+      if (auth.role === 'ADMIN') {
+        localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        this.currentUserId = null;
+        this.showAdmin();
+        await this.loadRemoteAdminState();
+      } else if (auth.user) {
+        this.users = [auth.user, ...this.users.filter((item) => item.id !== auth.user.id)];
+        this.setCurrentUser(auth.user);
+        await this.loadRemoteUserBookings();
+        this.showClient();
+      }
       this.loginPassword = '';
       this.authError = '';
-      this.showAdmin();
-      return;
+    } catch {
+      this.authError = 'No se pudo conectar con el servidor.';
     }
-
-    const user = this.users.find((item) => item.email.toLowerCase() === email && item.password === this.loginPassword);
-    if (!user) {
-      this.authError = 'Credenciales incorrectas.';
-      return;
-    }
-
-    this.setCurrentUser(user);
-    this.loginPassword = '';
-    this.authError = '';
-    this.showClient();
   }
 
-  register(): void {
-    const email = this.loginUser.trim().toLowerCase();
-    const password = this.loginPassword.trim();
-    const name = this.registerName.trim();
-    const phone = this.registerPhone.trim();
-
-    if (!name || !phone || !email || !password) {
-      this.authError = 'Completa nombre, telefono, email y contrasena.';
-      return;
+  private async loadRemoteExperiences(): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/experiences`);
+      if (!response.ok) return;
+      const remote = await response.json();
+      if (Array.isArray(remote) && remote.length > 0) {
+        this.experiences = remote.map((item: any) => ({
+          ...item,
+          hours: item.hours || this.hours
+        }));
+      }
+    } catch {
+      // The local catalogue remains available when the API is offline.
     }
+  }
 
-    if (this.users.some((user) => user.email.toLowerCase() === email)) {
-      this.authError = 'Ya existe un usuario con ese email.';
-      return;
+  private async loadRemoteUserBookings(): Promise<void> {
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/bookings/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) return;
+      const remote = await response.json();
+      if (Array.isArray(remote)) this.bookingHistory = remote.map((item: any) => this.toBookingHistoryItem(item));
+    } catch {
+      // Keep the cached list as a temporary fallback.
     }
+  }
 
-    const user: CustomerUser = {
-      id: Date.now(),
-      name,
-      phone,
-      email,
-      password,
-      bonuses: 0,
-      createdAt: new Date().toISOString()
+  private async loadRemoteAdminState(): Promise<void> {
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/state`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) return;
+      const state = await response.json();
+      if (Array.isArray(state.users)) this.users = state.users;
+      if (Array.isArray(state.experiences)) this.experiences = state.experiences;
+      if (Array.isArray(state.bookingHistory)) this.bookingHistory = state.bookingHistory;
+    } catch {
+      // Keep cached admin data as a temporary fallback.
+    }
+  }
+
+  private toBookingHistoryItem(item: any): BookingHistoryItem {
+    return {
+      id: item.id,
+      userId: item.userId ?? null,
+      experienceId: item.experienceId,
+      type: item.type || 'lessons',
+      title: item.title || 'Clase',
+      date: item.date || item.dateKey,
+      dateKey: item.dateKey,
+      hour: item.hour,
+      payment: item.payment || 'mock',
+      customerName: item.customerName || this.customerName,
+      phone: item.phone || this.phone,
+      amount: Number(item.amount || 0),
+      status: item.status || 'CONFIRMED'
     };
+  }
 
-    this.users = [user, ...this.users];
-    this.persistUsers();
-    this.setCurrentUser(user);
-    this.loginPassword = '';
-    this.authError = '';
-    this.showClient();
+  async register(): Promise<void> {
+    const email = this.loginUser.trim().toLowerCase();
+    const password = this.loginPassword;
+    const firstName = this.registerName.trim().replace(/\s+/g, ' ');
+    const lastName = this.registerLastName.trim().replace(/\s+/g, ' ');
+    const phone = this.registerPhone.trim().replace(/[\s-]/g, '');
+
+    if (!NAME_PATTERN.test(firstName) || firstName.length < 2 || firstName.length > 80) {
+      this.authError = 'Introduce un nombre valido.';
+      return;
+    }
+    if (!NAME_PATTERN.test(lastName) || lastName.length < 2 || lastName.length > 80) {
+      this.authError = 'Introduce unos apellidos validos.';
+      return;
+    }
+    if (!EMAIL_PATTERN.test(email) || email.length > 180) {
+      this.authError = 'Introduce un email valido.';
+      return;
+    }
+    if (!SPANISH_PHONE_PATTERN.test(phone)) {
+      this.authError = 'Introduce un telefono espanol valido.';
+      return;
+    }
+    if (!PASSWORD_PATTERN.test(password)) {
+      this.authError = 'La contraseña debe tener 8 caracteres, mayuscula, minuscula y numero.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, phone: phone.startsWith('+34') ? phone : `+34${phone}`, email, password })
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.authError = error?.error || 'No se pudo crear la cuenta.';
+        return;
+      }
+      this.authError = 'Cuenta creada. Revisa tu email para confirmar el registro.';
+      this.loginPassword = '';
+    } catch {
+      this.authError = 'No se pudo conectar con el servidor.';
+    }
   }
 
   logout(): void {
@@ -570,7 +669,7 @@ export class AppComponent {
     this.visibleMonth = nextMonth;
   }
 
-  reserve(): void {
+  async reserve(): Promise<void> {
     const selectedCount = this.selectedExperiences.length;
 
     if (selectedCount === 0) {
@@ -615,23 +714,47 @@ export class AppComponent {
       return;
     }
 
-    this.updateCurrentUserBonuses(-selectedCount);
-
     const customer = this.currentUser;
+    const token = localStorage.getItem('centro_ecuestre_token');
+    const response = await fetch(`${API_URL}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        experienceId: this.selectedExperience?.id,
+        dateKey: this.toDateKey(this.selectedDate),
+        date: this.formattedDate,
+        hour: this.selectedHour,
+        payment: 'mock',
+        customerName: customer?.name || this.customerName,
+        phone: customer?.phone || this.phone
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      this.warning = error?.error || 'No se pudo crear la reserva.';
+      this.confirmation = '';
+      return;
+    }
+
+    const saved = await response.json();
     const booking: BookingHistoryItem = {
-      id: Date.now(),
-      userId: customer?.id || null,
-      experienceId: this.selectedExperience?.id,
+      id: saved.id,
+      userId: saved.userId ?? customer?.id ?? null,
+      experienceId: saved.experienceId,
       type: 'lessons',
-      title: this.selectedExperienceTitle,
+      title: saved.title || this.selectedExperienceTitle,
       date: this.formattedDate,
-      dateKey: this.toDateKey(this.selectedDate),
-      hour: this.selectedHour,
-      payment: `${selectedCount} bono${selectedCount === 1 ? '' : 's'}`,
+      dateKey: saved.dateKey || this.toDateKey(this.selectedDate),
+      hour: saved.hour || this.selectedHour,
+      payment: 'mock',
       customerName: customer?.name || this.customerName,
       phone: customer?.phone || this.phone,
-      amount: 0,
-      status: 'CONFIRMED'
+      amount: Number(saved.amount || 0),
+      status: saved.status || 'CONFIRMED'
     };
 
     this.bookingHistory = [booking, ...this.bookingHistory];

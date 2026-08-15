@@ -260,7 +260,7 @@
       <button class="back-link" type="button" (click)="showClient()">Volver a cliente</button>
       <p class="eyebrow">{{ authMode === 'register' ? 'Crear cuenta' : 'Acceso' }}</p>
       <h1>{{ authMode === 'register' ? 'Nueva cuenta' : 'Iniciar sesion' }}</h1>
-      <p class="auth-copy">Entra como cliente para comprar bonos y conservarlos, o accede como administrador con admin / admin.</p>
+       <p class="auth-copy">Entra como cliente para comprar bonos y conservarlos, o accede como administrador.</p>
 
       <div class="auth-switch">
         <button type="button" [class.active]="authMode === 'login'" (click)="setAuthMode('login')">Entrar</button>
@@ -269,26 +269,30 @@
 
       <form class="auth-form" (ngSubmit)="authMode === 'register' ? register() : login()">
         <label *ngIf="authMode === 'register'">
-          Nombre completo
-          <input type="text" name="registerName" [(ngModel)]="registerName" autocomplete="name">
-        </label>
+           Nombre
+           <input type="text" name="registerName" [(ngModel)]="registerName" autocomplete="given-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
+         </label>
+         <label *ngIf="authMode === 'register'">
+           Apellidos
+           <input type="text" name="registerLastName" [(ngModel)]="registerLastName" autocomplete="family-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
+         </label>
         <label *ngIf="authMode === 'register'">
           Telefono
-          <input type="tel" name="registerPhone" [(ngModel)]="registerPhone" autocomplete="tel">
+           <input type="tel" name="registerPhone" [(ngModel)]="registerPhone" autocomplete="tel" required pattern="(\+34[ -]?)?[6789][0-9]{2}[ -]?[0-9]{3}[ -]?[0-9]{3}">
         </label>
         <label>
-          Email o usuario admin
-          <input type="text" name="loginUser" [(ngModel)]="loginUser" autocomplete="username">
+           Email
+           <input type="email" name="loginUser" [(ngModel)]="loginUser" autocomplete="email" required>
         </label>
         <label>
-          Contrasena
-          <input type="password" name="loginPassword" [(ngModel)]="loginPassword" autocomplete="current-password">
+          Contraseña
+           <input type="password" name="loginPassword" [(ngModel)]="loginPassword" autocomplete="current-password" required minlength="8">
         </label>
         <p class="warning" *ngIf="authError">{{ authError }}</p>
         <button class="pay-button" type="submit">{{ authMode === 'register' ? 'Crear cuenta' : 'Entrar' }}</button>
       </form>
 
-      <p class="secure demo-note">Los bonos se guardan en la cuenta del cliente. Admin: admin / admin</p>
+       <p class="secure demo-note">Los bonos se guardan en la cuenta del cliente.</p>
     </section>
   </main>
 </ng-container>
