@@ -87,12 +87,14 @@ const MONTH_NAMES = [
 
 const LONG_WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 const ADMIN_SESSION_KEY = 'centro_ecuestre_admin_session';
+import { environment } from '../environments/environment';
+
 const CUSTOMER_SESSION_KEY = 'centro_ecuestre_customer_session';
 const USERS_KEY = 'centro_ecuestre_users';
 const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
 const MAX_BOOKINGS_PER_SLOT = 5;
-const API_URL = 'http://localhost:8081/api';
+const API_URL = environment.apiUrl;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const SPANISH_PHONE_PATTERN = /^(?:\+34\s?)?[6789]\d{8}$/;
 const NAME_PATTERN = /^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+(?:[ '\-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*$/;
