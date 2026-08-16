@@ -14,3 +14,9 @@ pnpm-debug.log*
 
 .DS_Store
 Thumbs.db
+
+.idea/
+.vscode/
+*.swp
+*.swo
+agents.md

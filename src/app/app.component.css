@@ -4,19 +4,35 @@
 }
 
 .site-navbar {
-  align-items: center;
-  background: linear-gradient(180deg, #fbf5ec 0%, #f8efe4 100%);
-  border-bottom: 1px solid var(--line);
-  display: grid;
-  font-family: "Open Sans", Arial, sans-serif;
-  gap: 20px;
-  grid-template-columns: 82px 1fr 58px;
-  min-height: 86px;
-  padding: 0 32px;
+  background: #fff;
+  display: flex;
+  justify-content: center;
   position: relative;
   top: 0;
   width: 100%;
   z-index: 30;
+}
+
+.site-navbar-inner {
+  align-items: center;
+  display: flex;
+  max-width: 1240px;
+  min-height: 86px;
+  padding: 0 20px;
+  position: relative;
+  width: 100%;
+}
+
+.site-navbar-left {
+  display: flex;
+}
+
+.site-navbar-right {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .site-brand {
@@ -36,6 +52,7 @@
 .site-nav {
   display: flex;
   justify-content: flex-end;
+  margin: 8px;
 }
 
 .site-nav a {
@@ -46,10 +63,42 @@
   padding: 0 13px;
   text-decoration: none;
   text-transform: uppercase;
+  transition: color 0.2s linear;
+}
+
+.site-nav a:hover {
+  color: #d3af30;
+}
+
+.site-cart {
+  align-items: center;
+  color: #d3af30;
+  display: inline-flex;
+  line-height: 1;
+  padding: 8px;
+  text-decoration: none;
+}
+
+.site-cart-label {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 6px 0 2px;
+  text-transform: uppercase;
+}
+
+.site-cart svg {
+  fill: currentColor;
+  height: 23px;
+  width: 23px;
 }
 
 .site-menu-wrap {
-  position: relative;
+  align-items: center;
+  display: flex;
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
 }
 
 .site-menu-button {
@@ -62,7 +111,7 @@
   height: 70px;
   justify-content: center;
   padding: 0;
-  width: 44px;
+  width: 34px;
 }
 
 .site-menu-button svg {
@@ -76,9 +125,9 @@
 }
 
 .site-menu-panel {
-  background: #fffaf3;
-  border: 1px solid var(--line);
-  box-shadow: 0 18px 50px rgba(47, 38, 31, 0.16);
+  background: #fff;
+  border: 1px solid #e3ddd4;
+  box-shadow: 0 18px 50px rgba(15, 15, 15, 0.16);
   display: grid;
   min-width: 190px;
   padding: 8px;
@@ -102,8 +151,8 @@
 }
 
 .site-menu-panel button:hover {
-  background: rgba(184, 134, 35, 0.1);
-  color: var(--gold-deep);
+  background: rgba(211, 175, 48, 0.12);
+  color: #80642a;
 }
 
 .outline-action,
@@ -995,11 +1044,6 @@ dd {
 }
 
 @media (max-width: 1180px) {
-  .site-navbar {
-    grid-template-columns: 1fr auto;
-    padding: 0 32px;
-  }
-
   .site-nav {
     display: none;
   }
@@ -1018,10 +1062,9 @@ dd {
 }
 
 @media (max-width: 760px) {
-  .site-navbar {
-    gap: 14px;
-    grid-template-columns: 1fr auto;
-    min-height: 76px;
+  .site-navbar-inner {
+    gap: 12px;
+    min-height: 70px;
     padding: 0 20px;
   }
 
@@ -1181,6 +1224,13 @@ dd {
 
 .admin-topbar h1 {
   font-size: 42px;
+}
+
+.admin-topbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .admin-actions,
@@ -1731,7 +1781,6 @@ dd {
 /* Martinez Luna theme */
 .site-navbar {
   background: #fff;
-  border-bottom-color: #e3ddd4;
 }
 
 .booking-page {
