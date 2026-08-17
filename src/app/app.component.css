@@ -1674,6 +1674,57 @@ dd {
   min-height: 96px;
 }
 
+.image-upload-box {
+  align-items: center;
+  background: rgba(255, 252, 247, 0.8);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 92px 1fr auto;
+  margin-top: 8px;
+  min-height: 74px;
+  padding: 8px;
+}
+
+.image-upload-box img {
+  aspect-ratio: 4 / 3;
+  background: #eee8df;
+  height: 58px;
+  object-fit: cover;
+  width: 78px;
+}
+
+.image-upload-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.image-upload-copy strong {
+  color: #2f261f;
+  font-size: 13px;
+}
+
+.image-upload-copy small {
+  color: #8a8178;
+  font-size: 11px;
+}
+
+.upload-button {
+  align-items: center;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  margin-top: 0;
+  min-height: 34px;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.upload-button input {
+  display: none;
+}
+
 .form-grid {
   display: grid;
   gap: 12px;

@@ -81,7 +81,7 @@
           [class.selected]="selectedExperienceIds.includes(experience.id)"
           (click)="selectExperience(experience.id)"
         >
-          <img [src]="experience.image" [alt]="experience.title">
+          <img [src]="getImageUrl(experience.image)" [alt]="experience.title">
           <div class="experience-info">
             <h2>{{ experience.title }}</h2>
             <p>{{ experience.description }}</p>
@@ -401,7 +401,7 @@
 
       <div class="admin-card-grid">
         <article class="admin-experience-card" *ngFor="let experience of experiences">
-          <img [src]="experience.image" [alt]="experience.title">
+          <img [src]="getImageUrl(experience.image)" [alt]="experience.title">
           <div>
             <span class="type-pill">{{ getTypeLabel(experience.type) }}</span>
             <h3>{{ experience.title }}</h3>
@@ -578,10 +578,22 @@
               <input type="number" name="experiencePrice" [(ngModel)]="experienceForm.price" min="0">
             </label>
           </div>
-          <label>
-            Imagen
-            <input type="text" name="experienceImage" [(ngModel)]="experienceForm.image">
-          </label>
+          <div class="form-field image-upload-field">
+            <span>Imagen</span>
+            <div class="image-upload-box">
+              <img *ngIf="experienceForm.image" [src]="getImageUrl(experienceForm.image)" [alt]="experienceForm.title || 'Imagen de experiencia'">
+              <div class="image-upload-copy">
+                <strong>{{ experienceForm.image ? 'Imagen seleccionada' : 'Sin imagen seleccionada' }}</strong>
+                <small>JPG, PNG o WEBP</small>
+              </div>
+              <label class="history-action upload-button">
+                Subir imagen
+                <input type="file" accept="image/jpeg,image/png,image/webp" (change)="uploadExperienceImage($event)">
+              </label>
+            </div>
+            <p class="limit-note" *ngIf="imageUploadInProgress">Subiendo imagen...</p>
+            <p class="warning" *ngIf="imageUploadError">{{ imageUploadError }}</p>
+          </div>
           <div class="form-field">
             <span>Franjas horarias</span>
             <div class="time-slot-grid">

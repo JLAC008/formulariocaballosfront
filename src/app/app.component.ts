@@ -104,6 +104,7 @@ const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
 const MAX_BOOKINGS_PER_SLOT = 5;
 const API_URL = environment.apiUrl;
+const API_BASE_URL = API_URL.replace(/\/api\/?$/, '');
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const SPANISH_PHONE_PATTERN = /^(?:\+34\s?)?[6789]\d{8}$/;
 const NAME_PATTERN = /^[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+(?:[ '\-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*$/;
@@ -176,6 +177,8 @@ export class AppComponent {
   cancellingScheduleGroup: AdminScheduleGroup | null = null;
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
+  imageUploadError = '';
+  imageUploadInProgress = false;
   userBonusAdjustments: Record<number, number> = {};
 
   constructor() {
@@ -851,6 +854,8 @@ export class AppComponent {
 
   openExperienceModal(experience?: Experience): void {
     this.editingExperience = experience || null;
+    this.imageUploadError = '';
+    this.imageUploadInProgress = false;
     this.experienceForm = experience
       ? {
           ...experience,
@@ -866,6 +871,53 @@ export class AppComponent {
     this.editingExperience = null;
     this.experienceForm = this.blankExperience();
     this.customExperienceHour = '';
+    this.imageUploadError = '';
+    this.imageUploadInProgress = false;
+  }
+
+  async uploadExperienceImage(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token) {
+      this.imageUploadError = 'Inicia sesion como administrador para subir imagenes.';
+      input.value = '';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    this.imageUploadError = '';
+    this.imageUploadInProgress = true;
+
+    try {
+      const response = await fetch(`${API_URL}/uploads/images`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.imageUploadError = error?.error || 'No se pudo subir la imagen.';
+        return;
+      }
+
+      const uploaded = await response.json();
+      this.experienceForm = {
+        ...this.experienceForm,
+        image: uploaded.url || this.experienceForm.image
+      };
+    } catch {
+      this.imageUploadError = 'No se pudo conectar con el servidor para subir la imagen.';
+    } finally {
+      this.imageUploadInProgress = false;
+      input.value = '';
+    }
   }
 
   saveExperience(): void {
@@ -990,6 +1042,14 @@ export class AppComponent {
 
   getTypeLabel(type: BookingType): string {
     return type === 'routes' ? 'Ruta' : 'Clase';
+  }
+
+  getImageUrl(image: string): string {
+    if (!image || image.startsWith('http://') || image.startsWith('https://') || image.startsWith('assets/')) {
+      return image;
+    }
+
+    return image.startsWith('/') ? `${API_BASE_URL}${image}` : image;
   }
 
   getStatusLabel(status: ReservationStatus): string {
