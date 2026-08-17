@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-type BookingType = 'lessons';
+type BookingType = 'lessons' | 'routes';
 type AppView = 'client' | 'login' | 'admin';
 type AdminTab = 'schedule' | 'experiences' | 'reservations' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
@@ -35,6 +35,11 @@ interface BonusPack {
   price: number;
 }
 
+interface ExperienceTypeOption {
+  value: BookingType;
+  label: string;
+}
+
 interface CustomerUser {
   id: number;
   name: string;
@@ -43,8 +48,12 @@ interface CustomerUser {
   phone: string;
   email: string;
   password?: string;
+  role?: string;
   bonuses: number;
+  emailVerified?: boolean;
+  active?: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface BookingHistoryItem {
@@ -121,16 +130,21 @@ export class AppComponent {
   readonly bonusPacks: BonusPack[] = [
     { amount: 10, price: 160 }
   ];
+  readonly experienceTypes: ExperienceTypeOption[] = [
+    { value: 'lessons', label: 'Clase' },
+    { value: 'routes', label: 'Ruta' }
+  ];
   readonly minDate = this.startOfDay(new Date());
   readonly maxDate = this.addMonths(this.minDate, 3);
 
-  users: CustomerUser[] = this.loadFromStorage<CustomerUser[]>(USERS_KEY, []);
+  users: CustomerUser[] = this.loadFromStorage<CustomerUser[]>(USERS_KEY, []).map((user) => this.toCustomerUser(user));
   experiences: Experience[] = this.loadLessonExperiences();
   bookingHistory: BookingHistoryItem[] = this.loadActiveLessonBookings();
 
   view: AppView = this.getInitialView();
   activeAdminTab: AdminTab = 'schedule';
   authMode: AuthMode = 'login';
+  activeExperienceType: BookingType = 'lessons';
   selectedExperienceIds: number[] = [];
   visibleMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
   selectedDate = new Date(this.minDate);
@@ -197,7 +211,7 @@ export class AppComponent {
   }
 
   get filteredExperiences(): Experience[] {
-    return this.experiences.filter((experience) => experience.active);
+    return this.experiences.filter((experience) => experience.active && experience.type === this.activeExperienceType);
   }
 
   get selectedExperiences(): Experience[] {
@@ -285,7 +299,9 @@ export class AppComponent {
   }
 
   get summarySelectionLabel(): string {
-    return this.selectedExperiences.length === 1 ? 'Clase seleccionada' : 'Clase seleccionada (0)';
+    return this.selectedExperiences.length === 1
+      ? `${this.getTypeLabel(this.selectedExperiences[0].type)} seleccionada`
+      : 'Experiencia seleccionada (0)';
   }
 
   get actionLabel(): string {
@@ -449,6 +465,18 @@ export class AppComponent {
     this.authError = '';
   }
 
+  setExperienceType(type: BookingType): void {
+    if (this.activeExperienceType === type) {
+      return;
+    }
+
+    this.activeExperienceType = type;
+    this.selectedExperienceIds = [];
+    this.ensureSelectedHourAvailable();
+    this.confirmation = '';
+    this.warning = '';
+  }
+
   async login(): Promise<void> {
     const email = this.loginUser.trim().toLowerCase();
 
@@ -475,8 +503,9 @@ export class AppComponent {
         this.showAdmin();
         await this.loadRemoteAdminState();
       } else if (auth.user) {
-        this.users = [auth.user, ...this.users.filter((item) => item.id !== auth.user.id)];
-        this.setCurrentUser(auth.user);
+        const user = this.toCustomerUser(auth.user);
+        this.users = [user, ...this.users.filter((item) => item.id !== user.id)];
+        this.setCurrentUser(user);
         await this.loadRemoteUserBookings();
         this.showClient();
       }
@@ -493,10 +522,7 @@ export class AppComponent {
       if (!response.ok) return;
       const remote = await response.json();
       if (Array.isArray(remote) && remote.length > 0) {
-        this.experiences = remote.map((item: any) => ({
-          ...item,
-          hours: item.hours || this.hours
-        }));
+        this.experiences = remote.map((item: any) => this.toExperience(item));
       }
     } catch {
       // The local catalogue remains available when the API is offline.
@@ -523,9 +549,9 @@ export class AppComponent {
       const response = await fetch(`${API_URL}/state`, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) return;
       const state = await response.json();
-      if (Array.isArray(state.users)) this.users = state.users;
-      if (Array.isArray(state.experiences)) this.experiences = state.experiences;
-      if (Array.isArray(state.bookingHistory)) this.bookingHistory = state.bookingHistory;
+      if (Array.isArray(state.users)) this.users = state.users.map((item: any) => this.toCustomerUser(item));
+      if (Array.isArray(state.experiences)) this.experiences = state.experiences.map((item: any) => this.toExperience(item));
+      if (Array.isArray(state.bookingHistory)) this.bookingHistory = state.bookingHistory.map((item: any) => this.toBookingHistoryItem(item));
     } catch {
       // Keep cached admin data as a temporary fallback.
     }
@@ -536,7 +562,7 @@ export class AppComponent {
       id: item.id,
       userId: item.userId ?? null,
       experienceId: item.experienceId,
-      type: item.type || 'lessons',
+      type: this.toBookingType(item.type),
       title: item.title || 'Clase',
       date: item.date || item.dateKey,
       dateKey: item.dateKey,
@@ -681,19 +707,19 @@ export class AppComponent {
     }
 
     if (!this.currentUser) {
-      this.warning = 'Inicia sesion o crea una cuenta para reservar clases con bonos.';
+      this.warning = 'Inicia sesion o crea una cuenta para reservar experiencias con bonos.';
       this.showLogin('login');
       return;
     }
 
     if (this.lessonBonuses < selectedCount) {
-      this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas clases.';
+      this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas experiencias.';
       this.confirmation = '';
       return;
     }
 
     if (!this.isSelectedHourAvailable) {
-      this.warning = 'Esta clase no esta disponible en esa hora. Elige otra franja horaria.';
+      this.warning = 'Esta experiencia no esta disponible en esa hora. Elige otra franja horaria.';
       this.confirmation = '';
       return;
     }
@@ -747,7 +773,7 @@ export class AppComponent {
       id: saved.id,
       userId: saved.userId ?? customer?.id ?? null,
       experienceId: saved.experienceId,
-      type: 'lessons',
+      type: this.toBookingType(saved.type || this.selectedExperience?.type),
       title: saved.title || this.selectedExperienceTitle,
       date: this.formattedDate,
       dateKey: saved.dateKey || this.toDateKey(this.selectedDate),
@@ -762,12 +788,12 @@ export class AppComponent {
     this.bookingHistory = [booking, ...this.bookingHistory];
     this.persistBookings();
 
-    this.reservationMessage = `Has reservado ${selectedCount} clase${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
+    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
     this.reservationNoticeMessage = this.getSelectedHourMessage();
     this.isReservationModalOpen = true;
     this.confirmation = '';
     this.warning = this.lessonBonuses === 0
-      ? 'Has agotado tus bonos. Compra mas bonos para reservar nuevas clases.'
+      ? 'Has agotado tus bonos. Compra mas bonos para reservar nuevas experiencias.'
       : '';
   }
 
@@ -845,7 +871,7 @@ export class AppComponent {
   saveExperience(): void {
     const form = {
       ...this.experienceForm,
-      type: 'lessons' as BookingType,
+      type: this.toBookingType(this.experienceForm.type),
       price: Number(this.experienceForm.price),
       hours: this.sanitizeExperienceHours(this.experienceForm.hours),
       hourMessages: this.sanitizeHourMessages(this.experienceForm.hourMessages, this.experienceForm.hours)
@@ -858,6 +884,7 @@ export class AppComponent {
     }
 
     this.persistExperiences();
+    void this.syncAdminState();
     this.closeExperienceModal();
   }
 
@@ -865,6 +892,7 @@ export class AppComponent {
     experience.active = !experience.active;
     this.experiences = [...this.experiences];
     this.persistExperiences();
+    void this.syncAdminState();
     this.selectedExperienceIds = this.selectedExperienceIds.filter((id) => id !== experience.id);
   }
 
@@ -908,6 +936,7 @@ export class AppComponent {
     this.persistUsers();
     this.persistBookings();
     this.persistExperiences();
+    void this.syncAdminState();
     this.closeDeleteExperienceModal();
   }
 
@@ -949,16 +978,18 @@ export class AppComponent {
     );
     this.persistUsers();
     this.persistBookings();
+    void this.syncAdminState();
     this.closeCancelClassModal();
   }
 
   updateReservationStatus(id: number, status: ReservationStatus): void {
     this.bookingHistory = this.bookingHistory.map((booking) => booking.id === id ? { ...booking, status } : booking);
     this.persistBookings();
+    void this.syncAdminState();
   }
 
   getTypeLabel(type: BookingType): string {
-    return 'Clase';
+    return type === 'routes' ? 'Ruta' : 'Clase';
   }
 
   getStatusLabel(status: ReservationStatus): string {
@@ -1012,6 +1043,7 @@ export class AppComponent {
       ? { ...user, bonuses: Math.max(0, user.bonuses + delta) }
       : user);
     this.persistUsers();
+    void this.syncAdminState();
   }
 
   applyUserBonusAdjustment(userId: number, direction: 1 | -1): void {
@@ -1072,19 +1104,98 @@ export class AppComponent {
     localStorage.setItem(EXPERIENCES_KEY, JSON.stringify(this.experiences));
   }
 
+  private async syncAdminState(): Promise<void> {
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token || !this.isAdminLoggedIn()) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/state`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          users: this.users.map((user) => this.toCustomerUserPayload(user)),
+          experiences: this.experiences,
+          bookingHistory: this.bookingHistory
+        })
+      });
+
+      if (!response.ok) {
+        this.warning = 'No se pudieron guardar los cambios en el servidor.';
+      }
+    } catch {
+      this.warning = 'No se pudieron guardar los cambios en el servidor.';
+    }
+  }
+
   private loadLessonExperiences(): Experience[] {
     return this.loadFromStorage<Experience[]>(EXPERIENCES_KEY, this.defaultExperiences())
-      .filter((experience) => experience.type === 'lessons')
-      .map((experience) => ({
-        ...experience,
-        hours: this.getExperienceHours(experience),
-        hourMessages: this.sanitizeHourMessages(experience.hourMessages, experience.hours)
-      }));
+      .map((experience) => this.toExperience(experience));
   }
 
   private loadActiveLessonBookings(): BookingHistoryItem[] {
     return this.loadFromStorage<BookingHistoryItem[]>(BOOKINGS_KEY, [])
-      .filter((booking) => booking.type === 'lessons' && this.isBookingReminderActive(booking));
+      .map((booking) => this.toBookingHistoryItem(booking))
+      .filter((booking) => this.isBookingReminderActive(booking));
+  }
+
+  private toExperience(item: any): Experience {
+    const experience = {
+      id: Number(item.id || Date.now()),
+      type: this.toBookingType(item.type),
+      title: item.title || 'Experiencia',
+      description: item.description || '',
+      level: item.level || '',
+      duration: item.duration || '',
+      price: Number(item.price || 0),
+      image: item.image || 'assets/route-sendero.jpg',
+      active: item.active !== false,
+      hours: Array.isArray(item.hours) ? item.hours : this.hours,
+      hourMessages: item.hourMessages || {}
+    };
+
+    return {
+      ...experience,
+      hours: this.getExperienceHours(experience),
+      hourMessages: this.sanitizeHourMessages(experience.hourMessages, experience.hours)
+    };
+  }
+
+  private toCustomerUser(item: any): CustomerUser {
+    const firstName = item.firstName || item.name || '';
+    const lastName = item.lastName || '';
+    return {
+      id: Number(item.id),
+      name: item.name || `${firstName} ${lastName}`.trim(),
+      firstName,
+      lastName,
+      phone: item.phone || '',
+      email: item.email || '',
+      password: item.password,
+      role: item.role || 'USER',
+      bonuses: Number(item.bonuses || 0),
+      emailVerified: item.emailVerified !== false,
+      active: item.active !== false,
+      createdAt: item.createdAt || new Date().toISOString(),
+      updatedAt: item.updatedAt || item.createdAt || new Date().toISOString()
+    };
+  }
+
+  private toCustomerUserPayload(user: CustomerUser): CustomerUser {
+    return {
+      ...this.toCustomerUser(user),
+      role: user.role || 'USER',
+      emailVerified: user.emailVerified !== false,
+      active: user.active !== false
+    };
+  }
+
+  private toBookingType(type: unknown): BookingType {
+    return type === 'routes' ? 'routes' : 'lessons';
   }
 
   private removeExpiredBookings(): void {
