@@ -102,7 +102,8 @@ const CUSTOMER_SESSION_KEY = 'centro_ecuestre_customer_session';
 const USERS_KEY = 'centro_ecuestre_users';
 const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
-const MAX_BOOKINGS_PER_SLOT = 5;
+const LESSON_CAPACITY = 5;
+const ROUTE_CAPACITY = 8;
 const API_URL = environment.apiUrl;
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, '');
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -332,7 +333,7 @@ export class AppComponent {
 
   get hasCurrentUserBookedSelectedSlot(): boolean {
     return this.selectedExperience
-      ? this.hasCurrentUserBookedSlot(this.selectedExperience, this.toDateKey(this.selectedDate), this.selectedHour)
+      ? this.hasCurrentUserBookedSlot(this.toDateKey(this.selectedDate), this.selectedHour)
       : false;
   }
 
@@ -741,7 +742,7 @@ export class AppComponent {
     }
 
     if (this.isSelectedSlotFull) {
-      this.warning = 'Esta hora ya tiene 5 reservas. Elige otra hora disponible.';
+      this.warning = 'Esta hora ya tiene el aforo completo. Elige otra hora disponible.';
       this.confirmation = '';
       return;
     }
@@ -1349,7 +1350,7 @@ export class AppComponent {
     };
   }
 
-  private hasCurrentUserBookedSlot(experience: Experience, dateKey: string, hour: string): boolean {
+  private hasCurrentUserBookedSlot(dateKey: string, hour: string): boolean {
     if (!this.currentUserId) {
       return false;
     }
@@ -1357,7 +1358,6 @@ export class AppComponent {
     return this.bookingHistory.some((booking) =>
       booking.dateKey === dateKey
       && booking.hour === hour
-      && this.isBookingForExperience(booking, experience)
       && booking.userId === this.currentUserId
       && booking.status !== 'CANCELLED'
       && this.isBookingReminderActive(booking)
@@ -1365,7 +1365,11 @@ export class AppComponent {
   }
 
   private isSlotFull(experience: Experience, dateKey: string, hour: string): boolean {
-    return this.getSlotBookingsCount(experience, dateKey, hour) >= MAX_BOOKINGS_PER_SLOT;
+    return this.getSlotBookingsCount(experience, dateKey, hour) >= this.getExperienceCapacity(experience);
+  }
+
+  private getExperienceCapacity(experience: Experience): number {
+    return experience.type === 'routes' ? ROUTE_CAPACITY : LESSON_CAPACITY;
   }
 
   private getSlotBookingsCount(experience: Experience, dateKey: string, hour: string): number {
