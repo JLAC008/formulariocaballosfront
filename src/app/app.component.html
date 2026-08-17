@@ -607,9 +607,18 @@
               </button>
             </div>
             <div class="custom-time-row">
-              <input type="time" name="customExperienceHour" [(ngModel)]="customExperienceHour">
+              <input
+                type="text"
+                name="customExperienceHour"
+                [(ngModel)]="customExperienceHour"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="18:30"
+                autocomplete="off"
+              >
               <button class="history-action" type="button" (click)="addCustomExperienceHour()">Anadir franja</button>
             </div>
+            <p class="warning" *ngIf="customExperienceHourError">{{ customExperienceHourError }}</p>
             <p class="limit-note">Las franjas anadidas aqui solo se guardan en esta experiencia.</p>
           </div>
           <div class="form-field" *ngIf="editableExperienceSelectedHours.length > 0">

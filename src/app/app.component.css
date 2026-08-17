@@ -1762,7 +1762,10 @@ dd {
 }
 
 .custom-time-row input {
+  font-size: 14px;
+  font-weight: 700;
   margin-top: 0;
+  text-align: center;
 }
 
 .custom-time-row .history-action {

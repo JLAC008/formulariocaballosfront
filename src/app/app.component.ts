@@ -177,6 +177,7 @@ export class AppComponent {
   cancellingScheduleGroup: AdminScheduleGroup | null = null;
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
+  customExperienceHourError = '';
   imageUploadError = '';
   imageUploadInProgress = false;
   userBonusAdjustments: Record<number, number> = {};
@@ -871,6 +872,7 @@ export class AppComponent {
     this.editingExperience = null;
     this.experienceForm = this.blankExperience();
     this.customExperienceHour = '';
+    this.customExperienceHourError = '';
     this.imageUploadError = '';
     this.imageUploadInProgress = false;
   }
@@ -1304,17 +1306,33 @@ export class AppComponent {
   }
 
   addCustomExperienceHour(): void {
-    const hour = this.customExperienceHour.trim();
+    const hour = this.normalizeCustomExperienceHour(this.customExperienceHour);
     if (!this.isValidHour(hour)) {
+      this.customExperienceHourError = 'Introduce una hora valida con formato HH:MM.';
       return;
     }
 
+    this.customExperienceHourError = '';
     this.experienceForm = {
       ...this.experienceForm,
       hours: this.sortHours([...this.getExperienceFormHours(), hour]),
       hourMessages: { ...(this.experienceForm.hourMessages || {}) }
     };
     this.customExperienceHour = '';
+  }
+
+  private normalizeCustomExperienceHour(value: string): string {
+    const trimmed = value.trim();
+    if (/^\d{4}$/.test(trimmed)) {
+      return `${trimmed.slice(0, 2)}:${trimmed.slice(2)}`;
+    }
+
+    if (/^\d{1,2}:\d{2}$/.test(trimmed)) {
+      const [hour, minute] = trimmed.split(':');
+      return `${hour.padStart(2, '0')}:${minute}`;
+    }
+
+    return trimmed;
   }
 
   getExperienceHourMessage(hour: string): string {
