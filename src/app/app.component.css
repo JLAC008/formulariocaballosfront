@@ -70,28 +70,6 @@
   color: #d3af30;
 }
 
-.site-cart {
-  align-items: center;
-  color: #d3af30;
-  display: inline-flex;
-  line-height: 1;
-  padding: 8px;
-  text-decoration: none;
-}
-
-.site-cart-label {
-  font-size: 16px;
-  font-weight: 600;
-  padding: 0 6px 0 2px;
-  text-transform: uppercase;
-}
-
-.site-cart svg {
-  fill: currentColor;
-  height: 23px;
-  width: 23px;
-}
-
 .site-menu-wrap {
   align-items: center;
   display: flex;
@@ -942,6 +920,12 @@ dd {
   border-color: #cba95e;
   box-shadow: var(--shadow);
   transform: translateY(-1px);
+}
+
+.bonus-pack-grid button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
 }
 
 .bonus-pack-grid strong {

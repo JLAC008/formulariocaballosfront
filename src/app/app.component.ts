@@ -35,6 +35,12 @@ interface BonusPack {
   price: number;
 }
 
+interface BonusPaymentStatusResponse {
+  status: 'PENDING' | 'COMPLETED';
+  bonuses: number;
+  user: CustomerUser;
+}
+
 interface ExperienceTypeOption {
   value: BookingType;
   label: string;
@@ -181,10 +187,12 @@ export class AppComponent {
   customExperienceHourError = '';
   imageUploadError = '';
   imageUploadInProgress = false;
+  isBonusCheckoutInProgress = false;
   userBonusAdjustments: Record<number, number> = {};
 
   constructor() {
     void this.loadRemoteExperiences();
+    void this.handleStripeBonusReturn();
   }
 
   get currentUser(): CustomerUser | null {
@@ -547,6 +555,51 @@ export class AppComponent {
     }
   }
 
+  private async handleStripeBonusReturn(): Promise<void> {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get('stripe_bonus');
+    const sessionId = params.get('session_id');
+    if (!result) {
+      return;
+    }
+
+    window.history.replaceState({}, document.title, window.location.pathname || '/');
+
+    if (result === 'cancel') {
+      this.warning = 'Pago cancelado. No se han anadido bonos.';
+      return;
+    }
+
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token || !sessionId) {
+      this.warning = 'No se pudo confirmar el pago. Inicia sesion y revisa tus bonos.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/payments/bonuses/status?sessionId=${encodeURIComponent(sessionId)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        this.warning = 'No se pudo confirmar el pago con Stripe.';
+        return;
+      }
+
+      const payment: BonusPaymentStatusResponse = await response.json();
+      if (payment.user) {
+        this.upsertCurrentUser(payment.user);
+      }
+      if (payment.status === 'COMPLETED') {
+        this.confirmation = `Pago confirmado. Se han anadido ${payment.bonuses} bono${payment.bonuses === 1 ? '' : 's'} a tu cuenta.`;
+        this.warning = '';
+      } else {
+        this.warning = 'El pago todavia no aparece como completado. Vuelve a intentarlo en unos segundos.';
+      }
+    } catch {
+      this.warning = 'No se pudo confirmar el pago con Stripe.';
+    }
+  }
+
   private async loadRemoteAdminState(): Promise<void> {
     const token = localStorage.getItem('centro_ecuestre_token');
     if (!token) return;
@@ -792,6 +845,9 @@ export class AppComponent {
 
     this.bookingHistory = [booking, ...this.bookingHistory];
     this.persistBookings();
+    if (typeof saved.remainingBonuses === 'number' && customer) {
+      this.setCurrentUserBonuses(saved.remainingBonuses);
+    }
 
     this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
     this.reservationNoticeMessage = this.getSelectedHourMessage();
@@ -837,17 +893,53 @@ export class AppComponent {
     this.isHistoryModalOpen = false;
   }
 
-  purchaseBonuses(pack: BonusPack): void {
+  async purchaseBonuses(pack: BonusPack): Promise<void> {
     if (!this.currentUser) {
       this.closeBonusModal();
       this.showLogin('login');
       return;
     }
 
-    this.updateCurrentUserBonuses(pack.amount);
-    this.isBonusModalOpen = false;
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token) {
+      this.closeBonusModal();
+      this.showLogin('login');
+      return;
+    }
+
+    this.isBonusCheckoutInProgress = true;
     this.warning = '';
-    this.confirmation = `Has comprado ${pack.amount} bono${pack.amount === 1 ? '' : 's'} por ${pack.price} EUR. Ahora tienes ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'} disponibles.`;
+    this.confirmation = '';
+
+    try {
+      const response = await fetch(`${API_URL}/payments/bonuses/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount: pack.amount })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.warning = error?.error || 'No se pudo iniciar el pago con Stripe.';
+        this.isBonusCheckoutInProgress = false;
+        return;
+      }
+
+      const checkout = await response.json();
+      if (!checkout.url) {
+        this.warning = 'Stripe no devolvio una pagina de pago.';
+        this.isBonusCheckoutInProgress = false;
+        return;
+      }
+
+      window.location.href = checkout.url;
+    } catch {
+      this.warning = 'No se pudo conectar con Stripe.';
+      this.isBonusCheckoutInProgress = false;
+    }
   }
 
   setAdminTab(tab: AdminTab): void {
@@ -1127,6 +1219,16 @@ export class AppComponent {
     this.phone = user.phone;
   }
 
+  private upsertCurrentUser(user: CustomerUser): void {
+    const normalized = this.toCustomerUser(user);
+    const exists = this.users.some((item) => item.id === normalized.id);
+    this.users = exists
+      ? this.users.map((item) => item.id === normalized.id ? normalized : item)
+      : [normalized, ...this.users];
+    this.setCurrentUser(normalized);
+    this.persistUsers();
+  }
+
   private updateCurrentUserBonuses(delta: number): void {
     if (!this.currentUser) {
       return;
@@ -1134,6 +1236,17 @@ export class AppComponent {
 
     this.users = this.users.map((user) => user.id === this.currentUserId
       ? { ...user, bonuses: Math.max(0, user.bonuses + delta) }
+      : user);
+    this.persistUsers();
+  }
+
+  private setCurrentUserBonuses(bonuses: number): void {
+    if (!this.currentUser) {
+      return;
+    }
+
+    this.users = this.users.map((user) => user.id === this.currentUserId
+      ? { ...user, bonuses: Math.max(0, bonuses), updatedAt: new Date().toISOString() }
       : user);
     this.persistUsers();
   }
