@@ -6,7 +6,7 @@ type BookingType = 'lessons' | 'routes';
 type AppView = 'client' | 'login' | 'admin';
 type AdminTab = 'schedule' | 'experiences' | 'reservations' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 type UserRole = 'guest' | 'customer' | 'admin';
 
 interface Experience {
@@ -174,10 +174,15 @@ export class AppComponent {
   warning = '';
   loginUser = '';
   loginPassword = '';
+  resetToken = '';
+  resetPassword = '';
+  resetPasswordConfirm = '';
   registerName = '';
   registerLastName = '';
   registerPhone = '';
   authError = '';
+  authNotice = '';
+  verificationEmailSentTo = '';
   reservationFilter: 'all' | ReservationStatus = 'all';
   editingExperience: Experience | null = null;
   deletingExperience: Experience | null = null;
@@ -191,6 +196,7 @@ export class AppComponent {
   userBonusAdjustments: Record<number, number> = {};
 
   constructor() {
+    void this.handleAuthLinks();
     void this.loadRemoteExperiences();
     void this.handleStripeBonusReturn();
   }
@@ -459,8 +465,11 @@ export class AppComponent {
     this.view = 'login';
     this.authMode = mode;
     this.authError = '';
+    this.authNotice = '';
     this.closeAccountMenu();
-    window.history.replaceState({}, '', '/login');
+    if (mode !== 'reset') {
+      window.history.replaceState({}, '', '/login');
+    }
   }
 
   showAdmin(): void {
@@ -476,6 +485,10 @@ export class AppComponent {
   setAuthMode(mode: AuthMode): void {
     this.authMode = mode;
     this.authError = '';
+    this.authNotice = '';
+    if (mode !== 'register') {
+      this.verificationEmailSentTo = '';
+    }
   }
 
   setExperienceType(type: BookingType): void {
@@ -524,6 +537,93 @@ export class AppComponent {
       }
       this.loginPassword = '';
       this.authError = '';
+    } catch {
+      this.authError = 'No se pudo conectar con el servidor.';
+    }
+  }
+
+  async requestPasswordReset(): Promise<void> {
+    const email = this.loginUser.trim().toLowerCase();
+
+    if (!EMAIL_PATTERN.test(email)) {
+      this.authError = 'Introduce un email valido.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.authError = error?.error || 'No existe ningun usuario con ese email.';
+        return;
+      }
+      this.authError = '';
+      this.authNotice = 'Te hemos enviado un enlace para cambiar la contrasena.';
+    } catch {
+      this.authError = 'No se pudo conectar con el servidor.';
+    }
+  }
+
+  async resendVerification(): Promise<void> {
+    const email = (this.verificationEmailSentTo || this.loginUser).trim().toLowerCase();
+
+    if (!EMAIL_PATTERN.test(email)) {
+      this.authError = 'Introduce el email de la cuenta pendiente.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (!response.ok) {
+        this.authError = 'No se pudo reenviar el correo de verificacion.';
+        return;
+      }
+      this.authError = '';
+      this.authNotice = 'Te hemos enviado otro enlace de verificacion.';
+    } catch {
+      this.authError = 'No se pudo conectar con el servidor.';
+    }
+  }
+
+  async submitPasswordReset(): Promise<void> {
+    if (!this.resetToken) {
+      this.authError = 'El enlace de recuperacion no es valido.';
+      return;
+    }
+    if (!PASSWORD_PATTERN.test(this.resetPassword)) {
+      this.authError = 'La contraseña debe tener 8 caracteres, mayuscula, minuscula y numero.';
+      return;
+    }
+    if (this.resetPassword !== this.resetPasswordConfirm) {
+      this.authError = 'Las contraseñas no coinciden.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: this.resetToken, password: this.resetPassword })
+      });
+      if (!response.ok) {
+        this.authError = 'El enlace no es valido o ha caducado.';
+        return;
+      }
+      this.resetToken = '';
+      this.resetPassword = '';
+      this.resetPasswordConfirm = '';
+      this.authMode = 'login';
+      this.authError = '';
+      this.authNotice = 'Contrasena actualizada. Ya puedes iniciar sesion.';
+      window.history.replaceState({}, '', '/login');
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
     }
@@ -672,7 +772,9 @@ export class AppComponent {
         this.authError = error?.error || 'No se pudo crear la cuenta.';
         return;
       }
-      this.authError = 'Cuenta creada. Revisa tu email para confirmar el registro.';
+      this.authError = '';
+      this.authNotice = 'Cuenta creada. Revisa tu email para confirmar el registro.';
+      this.verificationEmailSentTo = email;
       this.loginPassword = '';
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
@@ -1265,7 +1367,45 @@ export class AppComponent {
     if (this.isAdminLoggedIn() && window.location.pathname.includes('admin')) {
       return 'admin';
     }
+    if (window.location.pathname.includes('verify-email') || window.location.pathname.includes('reset-password')) {
+      return 'login';
+    }
     return 'client';
+  }
+
+  private async handleAuthLinks(): Promise<void> {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token') || '';
+
+    if (window.location.pathname.includes('verify-email')) {
+      this.view = 'login';
+      this.authMode = 'login';
+      if (!token) {
+        this.authError = 'El enlace de verificacion no es valido.';
+        return;
+      }
+      try {
+        const response = await fetch(`${API_URL}/auth/verify-email?token=${encodeURIComponent(token)}`);
+        if (!response.ok) {
+          this.authError = 'El enlace no es valido o ha caducado.';
+          return;
+        }
+        this.authNotice = 'Cuenta confirmada. Ya puedes iniciar sesion.';
+        this.authError = '';
+        window.history.replaceState({}, '', '/login');
+      } catch {
+        this.authError = 'No se pudo conectar con el servidor.';
+      }
+      return;
+    }
+
+    if (window.location.pathname.includes('reset-password')) {
+      this.view = 'login';
+      this.authMode = 'reset';
+      this.resetToken = token;
+      this.authError = token ? '' : 'El enlace de recuperacion no es valido.';
+      this.authNotice = '';
+    }
   }
 
   private persistUsers(): void {

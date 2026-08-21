@@ -1205,6 +1205,24 @@ dd {
   color: #fff9ee;
 }
 
+.auth-links {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.auth-links button {
+  background: transparent;
+  border: 0;
+  color: var(--gold-deep);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .back-link {
   background: transparent;
   border: 0;
