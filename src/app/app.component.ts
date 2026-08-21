@@ -328,7 +328,7 @@ export class AppComponent {
   }
 
   get actionHelpText(): string {
-    return 'Debes iniciar sesion para usar o comprar bonos';
+    return 'Debes iniciar sesión para usar o comprar bonos';
   }
 
   get canReserve(): boolean {
@@ -507,7 +507,7 @@ export class AppComponent {
     const email = this.loginUser.trim().toLowerCase();
 
     if (!EMAIL_PATTERN.test(email) || !this.loginPassword) {
-      this.authError = 'Introduce un email y una contraseña validos.';
+      this.authError = 'Introduce un email y una contraseña válidos.';
       return;
     }
 
@@ -546,7 +546,7 @@ export class AppComponent {
     const email = this.loginUser.trim().toLowerCase();
 
     if (!EMAIL_PATTERN.test(email)) {
-      this.authError = 'Introduce un email valido.';
+      this.authError = 'Introduce un email válido.';
       return;
     }
 
@@ -562,7 +562,7 @@ export class AppComponent {
         return;
       }
       this.authError = '';
-      this.authNotice = 'Te hemos enviado un enlace para cambiar la contrasena.';
+      this.authNotice = 'Te hemos enviado un enlace para cambiar la contraseña.';
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
     }
@@ -583,11 +583,11 @@ export class AppComponent {
         body: JSON.stringify({ email })
       });
       if (!response.ok) {
-        this.authError = 'No se pudo reenviar el correo de verificacion.';
+        this.authError = 'No se pudo reenviar el correo de verificación.';
         return;
       }
       this.authError = '';
-      this.authNotice = 'Te hemos enviado otro enlace de verificacion.';
+      this.authNotice = 'Te hemos enviado otro enlace de verificación.';
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
     }
@@ -595,11 +595,11 @@ export class AppComponent {
 
   async submitPasswordReset(): Promise<void> {
     if (!this.resetToken) {
-      this.authError = 'El enlace de recuperacion no es valido.';
+      this.authError = 'El enlace de recuperación no es válido.';
       return;
     }
     if (!PASSWORD_PATTERN.test(this.resetPassword)) {
-      this.authError = 'La contraseña debe tener 8 caracteres, mayuscula, minuscula y numero.';
+      this.authError = 'La contraseña debe tener 8 caracteres, mayúscula, minúscula y número.';
       return;
     }
     if (this.resetPassword !== this.resetPasswordConfirm) {
@@ -614,7 +614,7 @@ export class AppComponent {
         body: JSON.stringify({ token: this.resetToken, password: this.resetPassword })
       });
       if (!response.ok) {
-        this.authError = 'El enlace no es valido o ha caducado.';
+        this.authError = 'El enlace no es válido o ha caducado.';
         return;
       }
       this.resetToken = '';
@@ -622,7 +622,7 @@ export class AppComponent {
       this.resetPasswordConfirm = '';
       this.authMode = 'login';
       this.authError = '';
-      this.authNotice = 'Contrasena actualizada. Ya puedes iniciar sesion.';
+      this.authNotice = 'Contraseña actualizada. Ya puedes iniciar sesión.';
       window.history.replaceState({}, '', '/login');
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
@@ -666,13 +666,13 @@ export class AppComponent {
     window.history.replaceState({}, document.title, window.location.pathname || '/');
 
     if (result === 'cancel') {
-      this.warning = 'Pago cancelado. No se han anadido bonos.';
+      this.warning = 'Pago cancelado. No se han añadido bonos.';
       return;
     }
 
     const token = localStorage.getItem('centro_ecuestre_token');
     if (!token || !sessionId) {
-      this.warning = 'No se pudo confirmar el pago. Inicia sesion y revisa tus bonos.';
+      this.warning = 'No se pudo confirmar el pago. Inicia sesión y revisa tus bonos.';
       return;
     }
 
@@ -690,10 +690,10 @@ export class AppComponent {
         this.upsertCurrentUser(payment.user);
       }
       if (payment.status === 'COMPLETED') {
-        this.confirmation = `Pago confirmado. Se han anadido ${payment.bonuses} bono${payment.bonuses === 1 ? '' : 's'} a tu cuenta.`;
+        this.confirmation = `Pago confirmado. Se han añadido ${payment.bonuses} bono${payment.bonuses === 1 ? '' : 's'} a tu cuenta.`;
         this.warning = '';
       } else {
-        this.warning = 'El pago todavia no aparece como completado. Vuelve a intentarlo en unos segundos.';
+        this.warning = 'El pago todavía no aparece como completado. Vuelve a intentarlo en unos segundos.';
       }
     } catch {
       this.warning = 'No se pudo confirmar el pago con Stripe.';
@@ -741,23 +741,23 @@ export class AppComponent {
     const phone = this.registerPhone.trim().replace(/[\s-]/g, '');
 
     if (!NAME_PATTERN.test(firstName) || firstName.length < 2 || firstName.length > 80) {
-      this.authError = 'Introduce un nombre valido.';
+      this.authError = 'Introduce un nombre válido.';
       return;
     }
     if (!NAME_PATTERN.test(lastName) || lastName.length < 2 || lastName.length > 80) {
-      this.authError = 'Introduce unos apellidos validos.';
+      this.authError = 'Introduce unos apellidos válidos.';
       return;
     }
     if (!EMAIL_PATTERN.test(email) || email.length > 180) {
-      this.authError = 'Introduce un email valido.';
+      this.authError = 'Introduce un email válido.';
       return;
     }
     if (!SPANISH_PHONE_PATTERN.test(phone)) {
-      this.authError = 'Introduce un telefono espanol valido.';
+      this.authError = 'Introduce un teléfono español válido.';
       return;
     }
     if (!PASSWORD_PATTERN.test(password)) {
-      this.authError = 'La contraseña debe tener 8 caracteres, mayuscula, minuscula y numero.';
+      this.authError = 'La contraseña debe tener 8 caracteres, mayúscula, minúscula y número.';
       return;
     }
 
@@ -861,13 +861,13 @@ export class AppComponent {
     const selectedCount = this.selectedExperiences.length;
 
     if (selectedCount === 0) {
-      this.warning = 'Selecciona al menos una opcion para poder reservar.';
+      this.warning = 'Selecciona al menos una opción para poder reservar.';
       this.confirmation = '';
       return;
     }
 
     if (!this.currentUser) {
-      this.warning = 'Inicia sesion o crea una cuenta para reservar experiencias con bonos.';
+      this.warning = 'Inicia sesión o crea una cuenta para reservar experiencias con bonos.';
       this.showLogin('login');
       return;
     }
@@ -962,7 +962,7 @@ export class AppComponent {
 
   openBonusModal(): void {
     if (!this.currentUser) {
-      this.warning = 'Para comprar bonos necesitas iniciar sesion o crear una cuenta.';
+      this.warning = 'Para comprar bonos necesitas iniciar sesión o crear una cuenta.';
       this.showLogin('login');
       return;
     }
@@ -982,7 +982,7 @@ export class AppComponent {
 
   openHistoryModal(): void {
     if (!this.currentUser) {
-      this.warning = 'Inicia sesion para ver tus reservas y bonos.';
+      this.warning = 'Inicia sesión para ver tus reservas y bonos.';
       this.showLogin('login');
       return;
     }
@@ -1032,7 +1032,7 @@ export class AppComponent {
 
       const checkout = await response.json();
       if (!checkout.url) {
-        this.warning = 'Stripe no devolvio una pagina de pago.';
+        this.warning = 'Stripe no devolvió una página de pago.';
         this.isBonusCheckoutInProgress = false;
         return;
       }
@@ -1081,7 +1081,7 @@ export class AppComponent {
 
     const token = localStorage.getItem('centro_ecuestre_token');
     if (!token) {
-      this.imageUploadError = 'Inicia sesion como administrador para subir imagenes.';
+      this.imageUploadError = 'Inicia sesión como administrador para subir imágenes.';
       input.value = '';
       return;
     }
@@ -1381,16 +1381,16 @@ export class AppComponent {
       this.view = 'login';
       this.authMode = 'login';
       if (!token) {
-        this.authError = 'El enlace de verificacion no es valido.';
+        this.authError = 'El enlace de verificación no es válido.';
         return;
       }
       try {
         const response = await fetch(`${API_URL}/auth/verify-email?token=${encodeURIComponent(token)}`);
         if (!response.ok) {
-          this.authError = 'El enlace no es valido o ha caducado.';
+          this.authError = 'El enlace no es válido o ha caducado.';
           return;
         }
-        this.authNotice = 'Cuenta confirmada. Ya puedes iniciar sesion.';
+        this.authNotice = 'Cuenta confirmada. Ya puedes iniciar sesión.';
         this.authError = '';
         window.history.replaceState({}, '', '/login');
       } catch {
@@ -1403,7 +1403,7 @@ export class AppComponent {
       this.view = 'login';
       this.authMode = 'reset';
       this.resetToken = token;
-      this.authError = token ? '' : 'El enlace de recuperacion no es valido.';
+      this.authError = token ? '' : 'El enlace de recuperación no es válido.';
       this.authNotice = '';
     }
   }
@@ -1746,8 +1746,8 @@ export class AppComponent {
       {
         id: 1,
         type: 'lessons',
-        title: 'Clase de Iniciacion',
-        description: 'Sesion guiada en pista para aprender postura, control basico y seguridad desde cero.',
+        title: 'Clase de Iniciación',
+        description: 'Sesión guiada en pista para aprender postura, control básico y seguridad desde cero.',
         level: 'Principiante',
         duration: '60 min',
         price: 38,
