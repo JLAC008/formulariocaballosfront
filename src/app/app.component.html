@@ -672,7 +672,7 @@
         </p>
         <p class="modal-copy" *ngIf="deletingExperienceReservationsCount > 0">
           Esta experiencia tiene {{ deletingExperienceReservationsCount }} reserva{{ deletingExperienceReservationsCount === 1 ? '' : 's' }} confirmada{{ deletingExperienceReservationsCount === 1 ? '' : 's' }}.
-          Se cancelaran y se devolveran {{ deletingExperienceRefundBonusesCount }} bono{{ deletingExperienceRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
+          Se cancelarán y se devolverán {{ deletingExperienceRefundBonusesCount }} bono{{ deletingExperienceRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
         </p>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeDeleteExperienceModal()">Cancelar</button>
@@ -687,8 +687,8 @@
         <p class="eyebrow modal-eyebrow">Cancelar experiencia</p>
         <h2 id="cancel-class-modal-title">{{ cancellingScheduleGroup?.title }}</h2>
         <p class="modal-copy">
-          Se cancelaran {{ cancellingClassReservationsCount }} reserva{{ cancellingClassReservationsCount === 1 ? '' : 's' }} confirmada{{ cancellingClassReservationsCount === 1 ? '' : 's' }} de esta experiencia a las {{ cancellingScheduleGroup?.hour }}.
-          Se devolveran {{ cancellingClassRefundBonusesCount }} bono{{ cancellingClassRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
+          Se cancelarán {{ cancellingClassReservationsCount }} reserva{{ cancellingClassReservationsCount === 1 ? '' : 's' }} confirmada{{ cancellingClassReservationsCount === 1 ? '' : 's' }} de esta experiencia a las {{ cancellingScheduleGroup?.hour }}.
+          Se devolverán {{ cancellingClassRefundBonusesCount }} bono{{ cancellingClassRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
         </p>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeCancelClassModal()">Volver</button>

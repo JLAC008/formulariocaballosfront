@@ -197,6 +197,7 @@ export class AppComponent {
 
   constructor() {
     void this.handleAuthLinks();
+    void this.loadRemoteCurrentUser();
     void this.loadRemoteExperiences();
     void this.handleStripeBonusReturn();
   }
@@ -459,6 +460,7 @@ export class AppComponent {
     this.view = 'client';
     this.closeAccountMenu();
     window.history.replaceState({}, '', '/');
+    void this.loadRemoteCurrentUser();
   }
 
   showLogin(mode: AuthMode = 'login'): void {
@@ -532,6 +534,7 @@ export class AppComponent {
         const user = this.toCustomerUser(auth.user);
         this.users = [user, ...this.users.filter((item) => item.id !== user.id)];
         this.setCurrentUser(user);
+        await this.loadRemoteCurrentUser();
         await this.loadRemoteUserBookings();
         this.showClient();
       }
@@ -652,6 +655,22 @@ export class AppComponent {
       if (Array.isArray(remote)) this.bookingHistory = remote.map((item: any) => this.toBookingHistoryItem(item));
     } catch {
       // Keep the cached list as a temporary fallback.
+    }
+  }
+
+  private async loadRemoteCurrentUser(): Promise<void> {
+    const token = localStorage.getItem('centro_ecuestre_token');
+    if (!token || !this.currentUserId || this.isAdminLoggedIn()) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) return;
+      const user = await response.json();
+      this.upsertCurrentUser(user);
+    } catch {
+      // Keep the cached user until the API is reachable.
     }
   }
 
@@ -1275,8 +1294,7 @@ export class AppComponent {
   }
 
   private getBookingBonusAmount(booking: BookingHistoryItem): number {
-    const rawAmount = Number.parseInt(booking.payment, 10);
-    return Number.isNaN(rawAmount) ? 0 : rawAmount;
+    return booking.status === 'CONFIRMED' ? 1 : 0;
   }
 
   private getCancellableScheduleGroupBookings(): BookingHistoryItem[] {
