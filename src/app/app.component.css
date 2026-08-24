@@ -811,6 +811,16 @@ dd {
   width: min(100%, 560px);
 }
 
+.profile-modal {
+  background: #fffaf3;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 70px rgba(47, 38, 31, 0.22);
+  max-width: 500px;
+  padding: 32px;
+  position: relative;
+  width: min(100%, 500px);
+}
+
 .modal-close {
   align-items: center;
   background: transparent;
@@ -833,13 +843,39 @@ dd {
 
 .bonus-modal h2,
 .reservation-modal h2,
-.history-modal h2 {
+.history-modal h2,
+.profile-modal h2 {
   color: #2f261f;
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 34px;
   font-weight: 600;
   line-height: 1;
   margin: 0 44px 10px 0;
+}
+
+.profile-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.profile-form label {
+  color: #5f4a3d;
+  display: grid;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.profile-form input {
+  background: rgba(255, 252, 247, 0.88);
+  border: 1px solid var(--line);
+  color: #2f261f;
+  font: inherit;
+  padding: 12px 14px;
+}
+
+.profile-form input[readonly] {
+  color: #8a8178;
 }
 
 .reservation-modal h2 {
@@ -1946,6 +1982,7 @@ dd {
 .bonus-modal h2,
 .reservation-modal h2,
 .history-modal h2,
+.profile-modal h2,
 .auth-card h1,
 .admin-topbar h1,
 .admin-section h2,
@@ -2000,6 +2037,7 @@ dd {
 .bonus-modal,
 .reservation-modal,
 .history-modal,
+.profile-modal,
 .experience-modal,
 .delete-modal {
   background: #fff;

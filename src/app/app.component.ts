@@ -67,6 +67,13 @@ interface CustomerUser {
   updatedAt?: string;
 }
 
+interface ProfileForm {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+}
+
 interface BookingHistoryItem {
   id: number;
   userId: number | null;
@@ -167,6 +174,7 @@ export class AppComponent {
   isBonusModalOpen = false;
   isReservationModalOpen = false;
   isHistoryModalOpen = false;
+  isProfileModalOpen = false;
   isExperienceModalOpen = false;
   isDeleteExperienceModalOpen = false;
   isCancelClassModalOpen = false;
@@ -189,6 +197,10 @@ export class AppComponent {
   authNotice = '';
   authInProgress = false;
   verificationEmailSentTo = '';
+  profileForm: ProfileForm = this.blankProfileForm();
+  profileError = '';
+  profileNotice = '';
+  profileInProgress = false;
   editingExperience: Experience | null = null;
   deletingExperience: Experience | null = null;
   cancellingScheduleGroup: AdminScheduleGroup | null = null;
@@ -1001,6 +1013,7 @@ export class AppComponent {
 
     this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
     this.reservationNoticeMessage = this.getSelectedHourMessage();
+    this.closeAllModals();
     this.isReservationModalOpen = true;
     this.confirmation = '';
     this.warning = this.lessonBonuses === 0
@@ -1015,6 +1028,7 @@ export class AppComponent {
       return;
     }
 
+    this.closeAllModals();
     this.isBonusModalOpen = true;
     this.confirmation = '';
   }
@@ -1035,12 +1049,102 @@ export class AppComponent {
       return;
     }
     this.removeExpiredBookings();
+    this.closeAllModals();
     this.closeAccountMenu();
     this.isHistoryModalOpen = true;
   }
 
   closeHistoryModal(): void {
     this.isHistoryModalOpen = false;
+  }
+
+  openProfileModal(): void {
+    if (!this.currentUser) {
+      this.showLogin('login');
+      return;
+    }
+
+    this.profileForm = {
+      firstName: this.currentUser.firstName || '',
+      lastName: this.currentUser.lastName || '',
+      phone: this.currentUser.phone || '',
+      email: this.currentUser.email || ''
+    };
+    this.profileError = '';
+    this.profileNotice = '';
+    this.closeAllModals();
+    this.closeAccountMenu();
+    this.isProfileModalOpen = true;
+  }
+
+  closeProfileModal(): void {
+    this.isProfileModalOpen = false;
+    this.profileError = '';
+    this.profileNotice = '';
+    this.profileInProgress = false;
+  }
+
+  async saveProfile(): Promise<void> {
+    if (this.profileInProgress) {
+      return;
+    }
+
+    const firstName = this.profileForm.firstName.trim().replace(/\s+/g, ' ');
+    const lastName = this.profileForm.lastName.trim().replace(/\s+/g, ' ');
+    const phone = this.profileForm.phone.trim().replace(/[\s-]/g, '');
+
+    if (!NAME_PATTERN.test(firstName) || firstName.length < 2 || firstName.length > 80) {
+      this.profileError = 'Introduce un nombre válido.';
+      return;
+    }
+    if (!NAME_PATTERN.test(lastName) || lastName.length < 2 || lastName.length > 80) {
+      this.profileError = 'Introduce unos apellidos válidos.';
+      return;
+    }
+    if (!SPANISH_PHONE_PATTERN.test(phone)) {
+      this.profileError = 'Introduce un teléfono español válido.';
+      return;
+    }
+
+    const token = this.getAuthToken();
+    if (!token) {
+      this.handleExpiredSession(new Response(null, { status: 401 }));
+      return;
+    }
+
+    try {
+      this.profileInProgress = true;
+      const response = await fetch(`${API_URL}/auth/me`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          phone: phone.startsWith('+34') ? phone : `+34${phone}`
+        })
+      });
+
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.profileError = error?.error || 'No se pudo actualizar el perfil.';
+        return;
+      }
+
+      const user = await response.json();
+      this.upsertCurrentUser(user);
+      this.profileNotice = 'Perfil actualizado correctamente.';
+      this.profileError = '';
+      this.closeProfileModal();
+      this.confirmation = 'Perfil actualizado correctamente.';
+    } catch {
+      this.profileError = 'No se pudo conectar con el servidor.';
+    } finally {
+      this.profileInProgress = false;
+    }
   }
 
   async purchaseBonuses(pack: BonusPack): Promise<void> {
@@ -1217,6 +1321,7 @@ export class AppComponent {
   }
 
   openExperienceModal(experience?: Experience): void {
+    this.closeAllModals();
     this.editingExperience = experience || null;
     this.imageUploadError = '';
     this.imageUploadInProgress = false;
@@ -1315,6 +1420,7 @@ export class AppComponent {
   }
 
   openDeleteExperienceModal(experience: Experience): void {
+    this.closeAllModals();
     this.deletingExperience = experience;
     this.isDeleteExperienceModalOpen = true;
   }
@@ -1359,6 +1465,7 @@ export class AppComponent {
   }
 
   openCancelClassModal(group: AdminScheduleGroup): void {
+    this.closeAllModals();
     this.cancellingScheduleGroup = group;
     this.isCancelClassModalOpen = true;
   }
@@ -1585,8 +1692,25 @@ export class AppComponent {
     this.confirmation = '';
     this.isBonusCheckoutInProgress = false;
     this.imageUploadInProgress = false;
+    this.profileInProgress = false;
+    this.isProfileModalOpen = false;
     this.closeAccountMenu();
     return true;
+  }
+
+  private closeAllModals(): void {
+    this.isBonusModalOpen = false;
+    this.isReservationModalOpen = false;
+    this.isHistoryModalOpen = false;
+    this.isProfileModalOpen = false;
+    this.isExperienceModalOpen = false;
+    this.isDeleteExperienceModalOpen = false;
+    this.isCancelClassModalOpen = false;
+    this.reservationNoticeMessage = '';
+    this.profileError = '';
+    this.profileNotice = '';
+    this.deletingExperience = null;
+    this.cancellingScheduleGroup = null;
   }
 
   private getInitialView(): AppView {
@@ -2025,6 +2149,15 @@ export class AppComponent {
       priceCents: 10000,
       currency: 'eur',
       active: true
+    };
+  }
+
+  private blankProfileForm(): ProfileForm {
+    return {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: ''
     };
   }
 

@@ -21,6 +21,7 @@
       </button>
       <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
         <ng-container *ngIf="isCustomer">
+          <button type="button" (click)="openProfileModal()">Mi perfil</button>
           <button type="button" (click)="openHistoryModal()">Recordatorio</button>
           <button type="button" (click)="logoutCurrentSession()">Cerrar sesión</button>
         </ng-container>
@@ -259,6 +260,35 @@
             </div>
           </article>
         </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isProfileModalOpen">
+      <section class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeProfileModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Cuenta cliente</p>
+        <h2 id="profile-modal-title">Mi perfil</h2>
+        <form class="profile-form" (ngSubmit)="saveProfile()">
+          <label>
+            Nombre
+            <input type="text" name="profileFirstName" [(ngModel)]="profileForm.firstName" autocomplete="given-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
+          </label>
+          <label>
+            Apellidos
+            <input type="text" name="profileLastName" [(ngModel)]="profileForm.lastName" autocomplete="family-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
+          </label>
+          <label>
+            Teléfono
+            <input type="tel" name="profilePhone" [(ngModel)]="profileForm.phone" autocomplete="tel" required pattern="(\+34[ -]?)?[6789][0-9]{2}[ -]?[0-9]{3}[ -]?[0-9]{3}">
+          </label>
+          <label>
+            Email
+            <input type="email" name="profileEmail" [(ngModel)]="profileForm.email" readonly>
+          </label>
+          <p class="confirmation" *ngIf="profileNotice">{{ profileNotice }}</p>
+          <p class="warning" *ngIf="profileError">{{ profileError }}</p>
+          <button class="pay-button modal-action" type="submit" [disabled]="profileInProgress">{{ profileInProgress ? 'Guardando...' : 'Guardar cambios' }}</button>
+        </form>
       </section>
     </div>
   </main>
