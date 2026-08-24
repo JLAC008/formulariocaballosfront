@@ -319,7 +319,7 @@ export class AppComponent {
   }
 
   get editableExperienceHours(): string[] {
-    return this.sortHours([...this.hours, ...this.getExperienceFormHours()]);
+    return this.getExperienceFormHours();
   }
 
   get editableExperienceSelectedHours(): string[] {
@@ -327,7 +327,7 @@ export class AppComponent {
   }
 
   get editableFridayHours(): string[] {
-    return this.sortHours([...this.hours, ...this.getExperienceFormFridayHours()]);
+    return this.getExperienceFormFridayHours();
   }
 
   get editableFridaySelectedHours(): string[] {
