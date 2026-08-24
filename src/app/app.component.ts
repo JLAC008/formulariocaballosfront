@@ -164,6 +164,9 @@ export class AppComponent {
   readonly maxDate = this.addMonths(this.minDate, 3);
 
   users: CustomerUser[] = this.loadFromStorage<CustomerUser[]>(USERS_KEY, []).map((user) => this.toCustomerUser(user));
+  userNameFilter = '';
+  userEmailFilter = '';
+  userPhoneFilter = '';
   experiences: Experience[] = this.loadLessonExperiences();
   bookingHistory: BookingHistoryItem[] = this.loadActiveLessonBookings();
 
@@ -412,6 +415,22 @@ export class AppComponent {
         && this.isBookingReminderActive(booking)
       )
       .sort((first, second) => this.getBookingDateTime(second).getTime() - this.getBookingDateTime(first).getTime());
+  }
+
+  get filteredUsers(): CustomerUser[] {
+    const nameFilter = this.normalizeSearch(this.userNameFilter);
+    const emailFilter = this.normalizeSearch(this.userEmailFilter);
+    const phoneFilter = this.normalizeSearch(this.userPhoneFilter).replace(/\D/g, '');
+
+    return this.users.filter((user) => {
+      const name = this.normalizeSearch(user.name);
+      const email = this.normalizeSearch(user.email);
+      const phone = this.normalizeSearch(user.phone).replace(/\D/g, '');
+
+      return (!nameFilter || name.includes(nameFilter))
+        && (!emailFilter || email.includes(emailFilter))
+        && (!phoneFilter || phone.includes(phoneFilter));
+    });
   }
 
   get adminDayReservations(): BookingHistoryItem[] {
@@ -2091,6 +2110,14 @@ export class AppComponent {
     }
 
     return trimmed;
+  }
+
+  private normalizeSearch(value: string | null | undefined): string {
+    return (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
   }
 
   getExperienceHourMessage(hour: string): string {

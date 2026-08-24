@@ -1416,6 +1416,29 @@ dd {
   padding: 0 12px;
 }
 
+.user-filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.user-filter-grid label {
+  color: #5f4a3d;
+  display: grid;
+  font-size: 13px;
+  gap: 7px;
+}
+
+.user-filter-grid input {
+  background: rgba(255, 252, 247, 0.88);
+  border: 1px solid var(--line);
+  color: #2f261f;
+  font: inherit;
+  min-height: 40px;
+  padding: 9px 11px;
+}
+
 .compact-action {
   max-width: 210px;
 }
@@ -1917,6 +1940,10 @@ dd {
   .section-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .user-filter-grid {
+    grid-template-columns: 1fr;
   }
 
   .admin-kpis,

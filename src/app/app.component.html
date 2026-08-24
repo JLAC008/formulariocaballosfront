@@ -563,6 +563,21 @@
         </div>
       </div>
 
+      <div class="user-filter-grid">
+        <label>
+          Nombre
+          <input type="search" [(ngModel)]="userNameFilter" name="userNameFilter" placeholder="Buscar por nombre">
+        </label>
+        <label>
+          Correo
+          <input type="search" [(ngModel)]="userEmailFilter" name="userEmailFilter" placeholder="Buscar por correo">
+        </label>
+        <label>
+          Teléfono
+          <input type="search" [(ngModel)]="userPhoneFilter" name="userPhoneFilter" placeholder="Buscar por teléfono">
+        </label>
+      </div>
+
       <div class="table-wrap">
         <table class="admin-table">
           <thead>
@@ -576,7 +591,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let user of users">
+            <tr *ngFor="let user of filteredUsers">
               <td>
                 <strong>{{ user.name }}</strong>
                 <span>{{ user.email }}</span>
@@ -595,7 +610,8 @@
             </tr>
           </tbody>
         </table>
-        <p class="history-empty" *ngIf="users.length === 0">Todavia no hay usuarios registrados.</p>
+        <p class="history-empty" *ngIf="users.length === 0">Todavía no hay usuarios registrados.</p>
+        <p class="history-empty" *ngIf="users.length > 0 && filteredUsers.length === 0">No hay usuarios que coincidan con los filtros.</p>
       </div>
     </section>
 
