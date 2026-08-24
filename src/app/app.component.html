@@ -450,14 +450,14 @@
         <div class="schedule-slot" *ngFor="let hour of adminScheduleHours">
           <div class="schedule-slot-time">
             <strong>{{ hour }}</strong>
-            <span>{{ getAdminConfirmedReservationsByHour(hour).length }}/5 confirmadas</span>
+            <span>{{ getAdminConfirmedReservationsByHour(hour).length }} confirmada{{ getAdminConfirmedReservationsByHour(hour).length === 1 ? '' : 's' }}</span>
           </div>
           <div class="schedule-slot-content" *ngIf="getAdminScheduleGroupsByHour(hour) as scheduleGroups">
             <article *ngFor="let group of scheduleGroups" class="schedule-class-card">
               <div class="schedule-class-header">
                 <div>
                   <strong>{{ group.title }}</strong>
-                  <span>{{ group.bookings.length }} reserva{{ group.bookings.length === 1 ? '' : 's' }}</span>
+                  <span>{{ group.bookings.length }}/{{ getAdminScheduleGroupCapacity(group) }} reserva{{ group.bookings.length === 1 ? '' : 's' }}</span>
                 </div>
                 <button class="history-action danger-action" type="button" *ngIf="group.bookings[0].status === 'CONFIRMED'" (click)="openCancelClassModal(group)">Cancelar experiencia</button>
               </div>

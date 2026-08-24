@@ -491,6 +491,11 @@ export class AppComponent {
     return [...groups.values()].sort((first, second) => first.title.localeCompare(second.title));
   }
 
+  getAdminScheduleGroupCapacity(group: AdminScheduleGroup): number {
+    const type = group.bookings[0]?.type;
+    return type === 'routes' ? ROUTE_CAPACITY : LESSON_CAPACITY;
+  }
+
   get activeExperiencesCount(): number {
     return this.experiences.filter((experience) => experience.active).length;
   }
