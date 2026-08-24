@@ -178,6 +178,7 @@ export class AppComponent {
   selectedHour = '18:00';
   currentUserId: number | null = this.getStoredCustomerId();
   isBonusModalOpen = false;
+  isMissingExperienceModalOpen = false;
   isReservationModalOpen = false;
   isLowBonusModalOpen = false;
   isHistoryModalOpen = false;
@@ -930,7 +931,7 @@ export class AppComponent {
     const selectedCount = this.selectedExperiences.length;
 
     if (selectedCount === 0) {
-      this.warning = 'Selecciona al menos una opción para poder reservar.';
+      this.openMissingExperienceModal();
       this.confirmation = '';
       return;
     }
@@ -1048,6 +1049,15 @@ export class AppComponent {
 
   closeBonusModal(): void {
     this.isBonusModalOpen = false;
+  }
+
+  openMissingExperienceModal(): void {
+    this.closeAllModals();
+    this.isMissingExperienceModalOpen = true;
+  }
+
+  closeMissingExperienceModal(): void {
+    this.isMissingExperienceModalOpen = false;
   }
 
   closeLowBonusModal(): void {
@@ -1776,6 +1786,7 @@ export class AppComponent {
 
   private closeAllModals(): void {
     this.isBonusModalOpen = false;
+    this.isMissingExperienceModalOpen = false;
     this.isReservationModalOpen = false;
     this.isLowBonusModalOpen = false;
     this.isHistoryModalOpen = false;

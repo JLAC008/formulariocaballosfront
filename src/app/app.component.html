@@ -184,7 +184,7 @@
           <p class="selection-help" *ngIf="selectedExperiences.length === 0">Marca una experiencia para continuar.</p>
         </div>
 
-        <button class="pay-button" type="button" [disabled]="!canReserve" (click)="reserve()">
+        <button class="pay-button" type="button" (click)="reserve()">
           {{ actionLabel }}
         </button>
         <button class="buy-button" type="button" (click)="openBonusModal()">Comprar mas bonos</button>
@@ -208,6 +208,16 @@
           </button>
         </div>
         <p class="history-empty" *ngIf="bonusPacks.length === 0">No hay packs de bonos disponibles ahora mismo.</p>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isMissingExperienceModalOpen" (click)="closeMissingExperienceModal()">
+      <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="missing-experience-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeMissingExperienceModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Reserva pendiente</p>
+        <h2 id="missing-experience-modal-title">Selecciona una experiencia</h2>
+        <p class="modal-copy">Para reservar con bono primero tienes que elegir una clase o una ruta.</p>
+        <button class="pay-button modal-action" type="button" (click)="closeMissingExperienceModal()">Aceptar</button>
       </section>
     </div>
 
