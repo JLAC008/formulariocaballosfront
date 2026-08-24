@@ -285,6 +285,22 @@
             Email
             <input type="email" name="profileEmail" [(ngModel)]="profileForm.email" readonly>
           </label>
+
+          <div class="profile-divider"></div>
+          <h3>Cambiar contraseña</h3>
+          <p class="profile-help">Déjalo vacío si no quieres cambiarla.</p>
+          <label>
+            Contraseña actual
+            <input type="password" name="currentPassword" [(ngModel)]="passwordForm.currentPassword" autocomplete="current-password">
+          </label>
+          <label>
+            Nueva contraseña
+            <input type="password" name="newPassword" [(ngModel)]="passwordForm.newPassword" autocomplete="new-password" minlength="8">
+          </label>
+          <label>
+            Repetir nueva contraseña
+            <input type="password" name="confirmPassword" [(ngModel)]="passwordForm.confirmPassword" autocomplete="new-password" minlength="8">
+          </label>
           <p class="confirmation" *ngIf="profileNotice">{{ profileNotice }}</p>
           <p class="warning" *ngIf="profileError">{{ profileError }}</p>
           <button class="pay-button modal-action" type="submit" [disabled]="profileInProgress">{{ profileInProgress ? 'Guardando...' : 'Guardar cambios' }}</button>

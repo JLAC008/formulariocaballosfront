@@ -779,6 +779,12 @@ dd {
   z-index: 20;
 }
 
+.modal-backdrop:has(.profile-modal) {
+  align-items: flex-start;
+  overflow: auto;
+  padding-top: 116px;
+}
+
 .bonus-modal {
   background: #fffaf3;
   border: 1px solid var(--line);
@@ -815,10 +821,12 @@ dd {
   background: #fffaf3;
   border: 1px solid var(--line);
   box-shadow: 0 24px 70px rgba(47, 38, 31, 0.22);
-  max-width: 500px;
-  padding: 32px;
+  max-height: calc(100vh - 140px);
+  max-width: 560px;
+  overflow: auto;
+  padding: 28px 32px;
   position: relative;
-  width: min(100%, 500px);
+  width: min(100%, 560px);
 }
 
 .modal-close {
@@ -855,7 +863,7 @@ dd {
 
 .profile-form {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   margin-top: 18px;
 }
 
@@ -876,6 +884,25 @@ dd {
 
 .profile-form input[readonly] {
   color: #8a8178;
+}
+
+.profile-divider {
+  border-top: 1px solid var(--line);
+  margin: 10px 0 6px;
+}
+
+.profile-modal h3 {
+  color: #2f261f;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.profile-help {
+  color: #6b6b6b;
+  font-size: 13px;
+  margin: -4px 0 0;
 }
 
 .reservation-modal h2 {

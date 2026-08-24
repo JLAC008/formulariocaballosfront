@@ -74,6 +74,12 @@ interface ProfileForm {
   email: string;
 }
 
+interface PasswordForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 interface BookingHistoryItem {
   id: number;
   userId: number | null;
@@ -201,6 +207,10 @@ export class AppComponent {
   profileError = '';
   profileNotice = '';
   profileInProgress = false;
+  passwordForm: PasswordForm = this.blankPasswordForm();
+  passwordError = '';
+  passwordNotice = '';
+  passwordInProgress = false;
   editingExperience: Experience | null = null;
   deletingExperience: Experience | null = null;
   cancellingScheduleGroup: AdminScheduleGroup | null = null;
@@ -1072,6 +1082,9 @@ export class AppComponent {
     };
     this.profileError = '';
     this.profileNotice = '';
+    this.passwordForm = this.blankPasswordForm();
+    this.passwordError = '';
+    this.passwordNotice = '';
     this.closeAllModals();
     this.closeAccountMenu();
     this.isProfileModalOpen = true;
@@ -1082,6 +1095,10 @@ export class AppComponent {
     this.profileError = '';
     this.profileNotice = '';
     this.profileInProgress = false;
+    this.passwordForm = this.blankPasswordForm();
+    this.passwordError = '';
+    this.passwordNotice = '';
+    this.passwordInProgress = false;
   }
 
   async saveProfile(): Promise<void> {
@@ -1104,6 +1121,24 @@ export class AppComponent {
     if (!SPANISH_PHONE_PATTERN.test(phone)) {
       this.profileError = 'Introduce un teléfono español válido.';
       return;
+    }
+
+    const wantsPasswordChange = Boolean(
+      this.passwordForm.currentPassword || this.passwordForm.newPassword || this.passwordForm.confirmPassword
+    );
+    if (wantsPasswordChange) {
+      if (!this.passwordForm.currentPassword) {
+        this.profileError = 'Introduce tu contraseña actual para cambiarla.';
+        return;
+      }
+      if (!PASSWORD_PATTERN.test(this.passwordForm.newPassword)) {
+        this.profileError = 'La nueva contraseña debe tener 8 caracteres, mayúscula, minúscula y número.';
+        return;
+      }
+      if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+        this.profileError = 'Las contraseñas no coinciden.';
+        return;
+      }
     }
 
     const token = this.getAuthToken();
@@ -1135,11 +1170,35 @@ export class AppComponent {
       }
 
       const user = await response.json();
+      if (wantsPasswordChange) {
+        const passwordResponse = await fetch(`${API_URL}/auth/me/password`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            currentPassword: this.passwordForm.currentPassword,
+            newPassword: this.passwordForm.newPassword
+          })
+        });
+
+        if (this.handleExpiredSession(passwordResponse)) return;
+        if (!passwordResponse.ok) {
+          const error = await passwordResponse.json().catch(() => null);
+          this.profileError = error?.error || 'No se pudo cambiar la contraseña.';
+          return;
+        }
+      }
+
       this.upsertCurrentUser(user);
-      this.profileNotice = 'Perfil actualizado correctamente.';
+      this.profileNotice = wantsPasswordChange
+        ? 'Perfil y contraseña actualizados correctamente.'
+        : 'Perfil actualizado correctamente.';
       this.profileError = '';
+      this.passwordForm = this.blankPasswordForm();
       this.closeProfileModal();
-      this.confirmation = 'Perfil actualizado correctamente.';
+      this.confirmation = this.profileNotice;
     } catch {
       this.profileError = 'No se pudo conectar con el servidor.';
     } finally {
@@ -1693,6 +1752,7 @@ export class AppComponent {
     this.isBonusCheckoutInProgress = false;
     this.imageUploadInProgress = false;
     this.profileInProgress = false;
+    this.passwordInProgress = false;
     this.isProfileModalOpen = false;
     this.closeAccountMenu();
     return true;
@@ -1709,6 +1769,9 @@ export class AppComponent {
     this.reservationNoticeMessage = '';
     this.profileError = '';
     this.profileNotice = '';
+    this.passwordError = '';
+    this.passwordNotice = '';
+    this.passwordForm = this.blankPasswordForm();
     this.deletingExperience = null;
     this.cancellingScheduleGroup = null;
   }
@@ -2158,6 +2221,14 @@ export class AppComponent {
       lastName: '',
       phone: '',
       email: ''
+    };
+  }
+
+  private blankPasswordForm(): PasswordForm {
+    return {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
     };
   }
 
