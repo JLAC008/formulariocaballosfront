@@ -242,6 +242,9 @@ export class AppComponent {
     void this.loadRemoteExperiences();
     void this.loadBonusPacks();
     void this.handleStripeBonusReturn();
+    if (this.view === 'admin' && this.isAdminLoggedIn()) {
+      void this.loadRemoteAdminState();
+    }
   }
 
   get currentUser(): CustomerUser | null {
