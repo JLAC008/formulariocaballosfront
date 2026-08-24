@@ -517,6 +517,7 @@ export class AppComponent {
     this.view = 'admin';
     this.closeAccountMenu();
     window.history.replaceState({}, '', '/admin');
+    void this.loadRemoteAdminState();
   }
 
   setAuthMode(mode: AuthMode): void {
@@ -766,9 +767,7 @@ export class AppComponent {
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) return;
       const state = await response.json();
-      if (Array.isArray(state.users)) this.users = state.users.map((item: any) => this.toCustomerUser(item));
-      if (Array.isArray(state.experiences)) this.experiences = state.experiences.map((item: any) => this.toExperience(item));
-      if (Array.isArray(state.bookingHistory)) this.bookingHistory = state.bookingHistory.map((item: any) => this.toBookingHistoryItem(item));
+      this.applyRemoteAdminState(state);
       await this.loadAdminBonusPacks();
     } catch {
       // Keep cached admin data as a temporary fallback.
@@ -1284,7 +1283,9 @@ export class AppComponent {
 
   setAdminTab(tab: AdminTab): void {
     this.activeAdminTab = tab;
-    if (tab === 'bonusPacks') {
+    if (tab === 'users' || tab === 'stats' || tab === 'schedule') {
+      void this.loadRemoteAdminState();
+    } else if (tab === 'bonusPacks') {
       void this.loadAdminBonusPacks();
     }
   }
@@ -1885,10 +1886,22 @@ export class AppComponent {
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         this.warning = 'No se pudieron guardar los cambios en el servidor.';
+        return;
+      }
+
+      const state = await response.json().catch(() => null);
+      if (state) {
+        this.applyRemoteAdminState(state);
       }
     } catch {
       this.warning = 'No se pudieron guardar los cambios en el servidor.';
     }
+  }
+
+  private applyRemoteAdminState(state: any): void {
+    if (Array.isArray(state.users)) this.users = state.users.map((item: any) => this.toCustomerUser(item));
+    if (Array.isArray(state.experiences)) this.experiences = state.experiences.map((item: any) => this.toExperience(item));
+    if (Array.isArray(state.bookingHistory)) this.bookingHistory = state.bookingHistory.map((item: any) => this.toBookingHistoryItem(item));
   }
 
   private loadLessonExperiences(): Experience[] {
