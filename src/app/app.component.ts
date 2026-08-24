@@ -2078,6 +2078,19 @@ export class AppComponent {
     };
   }
 
+  removeExperienceHour(hour: string): void {
+    const currentHours = this.getExperienceFormHours();
+    if (!currentHours.includes(hour) || currentHours.length === 1) {
+      return;
+    }
+
+    this.experienceForm = {
+      ...this.experienceForm,
+      hours: currentHours.filter((selectedHour) => selectedHour !== hour),
+      hourMessages: this.removeHourMessage(hour)
+    };
+  }
+
   isExperienceHourSelected(hour: string): boolean {
     return this.getExperienceFormHours().includes(hour);
   }

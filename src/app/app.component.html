@@ -700,6 +700,19 @@
                 {{ hour }}
               </button>
             </div>
+            <div class="selected-time-list" *ngIf="editableExperienceSelectedHours.length > 0">
+              <div class="selected-time-row" *ngFor="let hour of editableExperienceSelectedHours">
+                <span>{{ hour }}</span>
+                <button
+                  type="button"
+                  class="history-action danger-action"
+                  (click)="removeExperienceHour(hour)"
+                  [disabled]="editableExperienceSelectedHours.length === 1"
+                >
+                  Quitar
+                </button>
+              </div>
+            </div>
             <div class="custom-time-row">
               <input
                 type="text"
@@ -710,7 +723,7 @@
                 placeholder="18:30"
                 autocomplete="off"
               >
-              <button class="history-action" type="button" (click)="addCustomExperienceHour()">Anadir franja</button>
+              <button class="history-action" type="button" (click)="addCustomExperienceHour()">Añadir franja</button>
             </div>
             <p class="warning" *ngIf="customExperienceHourError">{{ customExperienceHourError }}</p>
             <p class="limit-note">Las franjas añadidas aquí solo se guardan en esta experiencia.</p>
