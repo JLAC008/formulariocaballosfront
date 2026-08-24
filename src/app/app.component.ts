@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 type BookingType = 'lessons' | 'routes';
 type AppView = 'client' | 'login' | 'admin';
-type AdminTab = 'schedule' | 'experiences' | 'users' | 'stats';
+type AdminTab = 'schedule' | 'experiences' | 'bonusPacks' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 type UserRole = 'guest' | 'customer' | 'admin';
@@ -31,8 +31,13 @@ interface CalendarDay {
 }
 
 interface BonusPack {
+  id: number;
+  name: string;
   amount: number;
   price: number;
+  priceCents: number;
+  currency: string;
+  active: boolean;
 }
 
 interface BonusPaymentStatusResponse {
@@ -101,6 +106,7 @@ const MONTH_NAMES = [
 ];
 
 const LONG_WEEKDAYS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+const AUTH_TOKEN_KEY = 'centro_ecuestre_token';
 const ADMIN_SESSION_KEY = 'centro_ecuestre_admin_session';
 import { environment } from '../environments/environment';
 
@@ -135,9 +141,8 @@ export class AppComponent {
   ];
   readonly weekDays = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
   readonly hours = ['11:00', '18:00', '18:45', '19:30'];
-  readonly bonusPacks: BonusPack[] = [
-    { amount: 10, price: 160 }
-  ];
+  bonusPacks: BonusPack[] = [];
+  adminBonusPacks: BonusPack[] = [];
   readonly experienceTypes: ExperienceTypeOption[] = [
     { value: 'lessons', label: 'Clase' },
     { value: 'routes', label: 'Ruta' }
@@ -193,12 +198,17 @@ export class AppComponent {
   imageUploadError = '';
   imageUploadInProgress = false;
   isBonusCheckoutInProgress = false;
+  bonusPackForm: BonusPack = this.blankBonusPack();
+  editingBonusPack: BonusPack | null = null;
+  bonusPackError = '';
   userBonusAdjustments: Record<number, number> = {};
 
   constructor() {
+    this.clearLegacyAuthStorage();
     void this.handleAuthLinks();
     void this.loadRemoteCurrentUser();
     void this.loadRemoteExperiences();
+    void this.loadBonusPacks();
     void this.handleStripeBonusReturn();
   }
 
@@ -524,9 +534,10 @@ export class AppComponent {
         return;
       }
       const auth = await response.json();
-      localStorage.setItem('centro_ecuestre_token', auth.token);
+      this.setAuthToken(auth.token);
       if (auth.role === 'ADMIN') {
-        localStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        sessionStorage.removeItem(CUSTOMER_SESSION_KEY);
         this.currentUserId = null;
         this.showAdmin();
         await this.loadRemoteAdminState();
@@ -646,10 +657,11 @@ export class AppComponent {
   }
 
   private async loadRemoteUserBookings(): Promise<void> {
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token) return;
     try {
       const response = await fetch(`${API_URL}/bookings/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) return;
       const remote = await response.json();
       if (Array.isArray(remote)) this.bookingHistory = remote.map((item: any) => this.toBookingHistoryItem(item));
@@ -659,13 +671,14 @@ export class AppComponent {
   }
 
   private async loadRemoteCurrentUser(): Promise<void> {
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token || !this.currentUserId || this.isAdminLoggedIn()) {
       return;
     }
 
     try {
       const response = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) return;
       const user = await response.json();
       this.upsertCurrentUser(user);
@@ -689,7 +702,7 @@ export class AppComponent {
       return;
     }
 
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token || !sessionId) {
       this.warning = 'No se pudo confirmar el pago. Inicia sesión y revisa tus bonos.';
       return;
@@ -699,6 +712,7 @@ export class AppComponent {
       const response = await fetch(`${API_URL}/payments/bonuses/status?sessionId=${encodeURIComponent(sessionId)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         this.warning = 'No se pudo confirmar el pago con Stripe.';
         return;
@@ -720,15 +734,17 @@ export class AppComponent {
   }
 
   private async loadRemoteAdminState(): Promise<void> {
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token) return;
     try {
       const response = await fetch(`${API_URL}/state`, { headers: { Authorization: `Bearer ${token}` } });
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) return;
       const state = await response.json();
       if (Array.isArray(state.users)) this.users = state.users.map((item: any) => this.toCustomerUser(item));
       if (Array.isArray(state.experiences)) this.experiences = state.experiences.map((item: any) => this.toExperience(item));
       if (Array.isArray(state.bookingHistory)) this.bookingHistory = state.bookingHistory.map((item: any) => this.toBookingHistoryItem(item));
+      await this.loadAdminBonusPacks();
     } catch {
       // Keep cached admin data as a temporary fallback.
     }
@@ -811,7 +827,7 @@ export class AppComponent {
   }
 
   logout(): void {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
+    this.clearAuthSession();
     this.closeAccountMenu();
     this.showClient();
   }
@@ -826,7 +842,7 @@ export class AppComponent {
   }
 
   logoutCustomer(): void {
-    localStorage.removeItem(CUSTOMER_SESSION_KEY);
+    this.clearAuthSession();
     this.currentUserId = null;
     this.customerName = 'Paco Martinez';
     this.phone = '633 443 322';
@@ -934,7 +950,7 @@ export class AppComponent {
     }
 
     const customer = this.currentUser;
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     const response = await fetch(`${API_URL}/bookings`, {
       method: 'POST',
       headers: {
@@ -952,6 +968,7 @@ export class AppComponent {
       })
     });
 
+    if (this.handleExpiredSession(response)) return;
     if (!response.ok) {
       const error = await response.json().catch(() => null);
       this.warning = error?.error || 'No se pudo crear la reserva.';
@@ -1033,7 +1050,7 @@ export class AppComponent {
       return;
     }
 
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token) {
       this.closeBonusModal();
       this.showLogin('login');
@@ -1051,9 +1068,10 @@ export class AppComponent {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ amount: pack.amount })
+        body: JSON.stringify({ packId: pack.id })
       });
 
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         const error = await response.json().catch(() => null);
         this.warning = error?.error || 'No se pudo iniciar el pago con Stripe.';
@@ -1077,6 +1095,125 @@ export class AppComponent {
 
   setAdminTab(tab: AdminTab): void {
     this.activeAdminTab = tab;
+    if (tab === 'bonusPacks') {
+      void this.loadAdminBonusPacks();
+    }
+  }
+
+  async loadBonusPacks(): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/bonus-packs`);
+      if (!response.ok) return;
+      const packs = await response.json();
+      if (Array.isArray(packs)) {
+        this.bonusPacks = packs.map((pack: any) => this.toBonusPack(pack)).filter((pack) => pack.active);
+      }
+    } catch {
+      // Keep the modal usable only when the API returns packs.
+    }
+  }
+
+  async loadAdminBonusPacks(): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/admin/bonus-packs`, { headers: { Authorization: `Bearer ${token}` } });
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        this.bonusPackError = 'No se pudieron cargar los packs de bonos.';
+        return;
+      }
+      const packs = await response.json();
+      this.adminBonusPacks = Array.isArray(packs) ? packs.map((pack: any) => this.toBonusPack(pack)) : [];
+      this.bonusPackError = '';
+    } catch {
+      this.bonusPackError = 'No se pudieron cargar los packs de bonos.';
+    }
+  }
+
+  editBonusPack(pack: BonusPack): void {
+    this.editingBonusPack = pack;
+    this.bonusPackForm = { ...pack };
+    this.bonusPackError = '';
+  }
+
+  resetBonusPackForm(): void {
+    this.editingBonusPack = null;
+    this.bonusPackForm = this.blankBonusPack();
+    this.bonusPackError = '';
+  }
+
+  async saveBonusPack(): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) return;
+    const payload = this.toBonusPackPayload(this.bonusPackForm);
+    if (!payload) return;
+
+    const url = this.editingBonusPack
+      ? `${API_URL}/admin/bonus-packs/${this.editingBonusPack.id}`
+      : `${API_URL}/admin/bonus-packs`;
+
+    try {
+      const response = await fetch(url, {
+        method: this.editingBonusPack ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.bonusPackError = error?.error || 'No se pudo guardar el pack.';
+        return;
+      }
+      this.resetBonusPackForm();
+      await this.loadAdminBonusPacks();
+      await this.loadBonusPacks();
+    } catch {
+      this.bonusPackError = 'No se pudo conectar con el servidor.';
+    }
+  }
+
+  async toggleBonusPack(pack: BonusPack): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/admin/bonus-packs/${pack.id}/toggle`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        this.bonusPackError = 'No se pudo cambiar el estado del pack.';
+        return;
+      }
+      await this.loadAdminBonusPacks();
+      await this.loadBonusPacks();
+    } catch {
+      this.bonusPackError = 'No se pudo conectar con el servidor.';
+    }
+  }
+
+  async deleteBonusPack(pack: BonusPack): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/admin/bonus-packs/${pack.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        this.bonusPackError = 'No se pudo eliminar el pack.';
+        return;
+      }
+      await this.loadAdminBonusPacks();
+      await this.loadBonusPacks();
+    } catch {
+      this.bonusPackError = 'No se pudo conectar con el servidor.';
+    }
   }
 
   openExperienceModal(experience?: Experience): void {
@@ -1110,7 +1247,7 @@ export class AppComponent {
       return;
     }
 
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token) {
       this.imageUploadError = 'Inicia sesión como administrador para subir imágenes.';
       input.value = '';
@@ -1129,6 +1266,7 @@ export class AppComponent {
         body: formData
       });
 
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         const error = await response.json().catch(() => null);
         this.imageUploadError = error?.error || 'No se pudo subir la imagen.';
@@ -1356,9 +1494,9 @@ export class AppComponent {
   }
 
   private setCurrentUser(user: CustomerUser): void {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
     this.currentUserId = user.id;
-    localStorage.setItem(CUSTOMER_SESSION_KEY, String(user.id));
+    sessionStorage.setItem(CUSTOMER_SESSION_KEY, String(user.id));
     this.customerName = user.name;
     this.phone = user.phone;
   }
@@ -1396,13 +1534,59 @@ export class AppComponent {
   }
 
   private isAdminLoggedIn(): boolean {
-    return localStorage.getItem(ADMIN_SESSION_KEY) === 'true';
+    return !!this.getAuthToken() && sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
   }
 
   private getStoredCustomerId(): number | null {
-    const raw = localStorage.getItem(CUSTOMER_SESSION_KEY);
+    if (!this.getAuthToken()) {
+      return null;
+    }
+
+    const raw = sessionStorage.getItem(CUSTOMER_SESSION_KEY);
     const id = raw ? Number(raw) : null;
     return id && this.users.some((user) => user.id === id) ? id : null;
+  }
+
+  private setAuthToken(token: string): void {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+  }
+
+  private getAuthToken(): string | null {
+    return sessionStorage.getItem(AUTH_TOKEN_KEY);
+  }
+
+  private clearAuthSession(): void {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    sessionStorage.removeItem(CUSTOMER_SESSION_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(CUSTOMER_SESSION_KEY);
+  }
+
+  private clearLegacyAuthStorage(): void {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(CUSTOMER_SESSION_KEY);
+  }
+
+  private handleExpiredSession(response: Response): boolean {
+    if (response.status !== 401 && response.status !== 403) {
+      return false;
+    }
+
+    this.clearAuthSession();
+    this.currentUserId = null;
+    this.view = 'login';
+    this.authMode = 'login';
+    this.authNotice = '';
+    this.authError = 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+    this.warning = '';
+    this.confirmation = '';
+    this.isBonusCheckoutInProgress = false;
+    this.imageUploadInProgress = false;
+    this.closeAccountMenu();
+    return true;
   }
 
   private getInitialView(): AppView {
@@ -1463,7 +1647,7 @@ export class AppComponent {
   }
 
   private async syncAdminState(): Promise<void> {
-    const token = localStorage.getItem('centro_ecuestre_token');
+    const token = this.getAuthToken();
     if (!token || !this.isAdminLoggedIn()) {
       return;
     }
@@ -1482,6 +1666,7 @@ export class AppComponent {
         })
       });
 
+      if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         this.warning = 'No se pudieron guardar los cambios en el servidor.';
       }
@@ -1549,6 +1734,54 @@ export class AppComponent {
       role: user.role || 'USER',
       emailVerified: user.emailVerified !== false,
       active: user.active !== false
+    };
+  }
+
+  private toBonusPack(item: any): BonusPack {
+    const priceCents = Number(item.priceCents ?? Math.round(Number(item.price || 0) * 100));
+    return {
+      id: Number(item.id || Date.now()),
+      name: item.name || `${Number(item.bonuses || item.amount || 1)} bono${Number(item.bonuses || item.amount || 1) === 1 ? '' : 's'}`,
+      amount: Math.max(1, Number(item.bonuses || item.amount || 1)),
+      price: Math.max(1, priceCents / 100),
+      priceCents: Math.max(100, priceCents),
+      currency: (item.currency || 'eur').toLowerCase(),
+      active: item.active !== false
+    };
+  }
+
+  private toBonusPackPayload(pack: BonusPack): any | null {
+    const amount = Math.floor(Number(pack.amount));
+    const price = Number(pack.price);
+    if (!pack.name.trim()) {
+      this.bonusPackError = 'Introduce un nombre para el pack.';
+      return null;
+    }
+    if (!Number.isFinite(amount) || amount < 1) {
+      this.bonusPackError = 'El pack debe tener al menos 1 bono.';
+      return null;
+    }
+    if (!Number.isFinite(price) || price < 1) {
+      this.bonusPackError = 'El precio debe ser al menos 1 EUR.';
+      return null;
+    }
+
+    const name = pack.name.trim();
+    const currentId = this.editingBonusPack?.id;
+    const duplicateName = this.adminBonusPacks.some((item) =>
+      item.name.trim().toLowerCase() === name.toLowerCase() && item.id !== currentId
+    );
+    if (duplicateName) {
+      this.bonusPackError = 'Ya existe un pack con ese nombre.';
+      return null;
+    }
+
+    return {
+      name,
+      bonuses: amount,
+      priceCents: Math.round(price * 100),
+      currency: (pack.currency || 'eur').toLowerCase(),
+      active: pack.active !== false
     };
   }
 
@@ -1783,6 +2016,18 @@ export class AppComponent {
     };
   }
 
+  private blankBonusPack(): BonusPack {
+    return {
+      id: 0,
+      name: 'Pack 5 bonos',
+      amount: 5,
+      price: 100,
+      priceCents: 10000,
+      currency: 'eur',
+      active: true
+    };
+  }
+
   private defaultExperiences(): Experience[] {
     return [
       {
@@ -1850,3 +2095,4 @@ export class AppComponent {
     return `${weekday}, ${date.getDate()} de ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
   }
 }
+

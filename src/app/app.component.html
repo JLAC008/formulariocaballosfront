@@ -199,14 +199,15 @@
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeBonusModal()">x</button>
         <p class="eyebrow modal-eyebrow">Bonos de experiencias</p>
         <h2 id="bonus-modal-title">Comprar bonos</h2>
-        <p class="modal-copy">Los bonos se compran de 10 en 10. Se anaden cuando Stripe confirma el pago.</p>
+        <p class="modal-copy">Elige un pack. Los bonos se añaden cuando Stripe confirma el pago.</p>
         <div class="bonus-pack-grid">
           <button type="button" *ngFor="let pack of bonusPacks" (click)="purchaseBonuses(pack)" [disabled]="isBonusCheckoutInProgress">
             <strong>{{ pack.amount }}</strong>
             <span>{{ pack.amount === 1 ? 'bono' : 'bonos' }}</span>
-            <em>{{ isBonusCheckoutInProgress ? 'Abriendo Stripe...' : pack.price + ' EUR' }}</em>
+            <em>{{ isBonusCheckoutInProgress ? 'Abriendo Stripe...' : pack.price + ' ' + pack.currency.toUpperCase() }}</em>
           </button>
         </div>
+        <p class="history-empty" *ngIf="bonusPacks.length === 0">No hay packs de bonos disponibles ahora mismo.</p>
       </section>
     </div>
 
@@ -366,6 +367,7 @@
     <nav class="admin-tabs" aria-label="Administración">
       <button type="button" [class.active]="activeAdminTab === 'schedule'" (click)="setAdminTab('schedule')">Agenda</button>
       <button type="button" [class.active]="activeAdminTab === 'experiences'" (click)="setAdminTab('experiences')">Experiencias</button>
+      <button type="button" [class.active]="activeAdminTab === 'bonusPacks'" (click)="setAdminTab('bonusPacks')">Bonos</button>
       <button type="button" [class.active]="activeAdminTab === 'users'" (click)="setAdminTab('users')">Usuarios</button>
       <button type="button" [class.active]="activeAdminTab === 'stats'" (click)="setAdminTab('stats')">Estadísticas</button>
     </nav>
@@ -439,6 +441,53 @@
           </div>
         </article>
       </div>
+    </section>
+
+    <section class="admin-section" *ngIf="activeAdminTab === 'bonusPacks'">
+      <div class="section-actions">
+        <div>
+          <h2>Packs de bonos</h2>
+          <p>Crea los packs que verá el cliente al comprar bonos.</p>
+        </div>
+        <button class="history-action" type="button" (click)="resetBonusPackForm()">Nuevo pack</button>
+      </div>
+
+      <form class="bonus-pack-admin-form" (ngSubmit)="saveBonusPack()">
+        <label>
+          Nombre
+          <input type="text" name="bonusPackName" [(ngModel)]="bonusPackForm.name" required>
+        </label>
+        <label>
+          Bonos
+          <input type="number" name="bonusPackAmount" [(ngModel)]="bonusPackForm.amount" min="1" step="1" required>
+        </label>
+        <label>
+          Precio EUR
+          <input type="number" name="bonusPackPrice" [(ngModel)]="bonusPackForm.price" min="1" step="0.01" required>
+        </label>
+        <label class="check-line bonus-pack-active">
+          <input type="checkbox" name="bonusPackActive" [(ngModel)]="bonusPackForm.active">
+          Activo
+        </label>
+        <button class="pay-button compact-action" type="submit">{{ editingBonusPack ? 'Guardar pack' : 'Crear pack' }}</button>
+      </form>
+      <p class="warning" *ngIf="bonusPackError">{{ bonusPackError }}</p>
+
+      <div class="admin-card-grid bonus-pack-admin-grid">
+        <article class="bonus-pack-admin-card" *ngFor="let pack of adminBonusPacks">
+          <div>
+            <span class="type-pill">{{ pack.active ? 'Activo' : 'Inactivo' }}</span>
+            <h3>{{ pack.name }}</h3>
+            <p>{{ pack.amount }} bono{{ pack.amount === 1 ? '' : 's' }} · {{ pack.price }} {{ pack.currency.toUpperCase() }}</p>
+          </div>
+          <div class="admin-card-actions">
+            <button class="buy-button" type="button" (click)="editBonusPack(pack)">Editar</button>
+            <button class="history-action" type="button" (click)="toggleBonusPack(pack)">{{ pack.active ? 'Desactivar' : 'Activar' }}</button>
+            <button class="history-action danger-action" type="button" (click)="deleteBonusPack(pack)">Eliminar</button>
+          </div>
+        </article>
+      </div>
+      <p class="history-empty" *ngIf="adminBonusPacks.length === 0">Todavía no hay packs configurados.</p>
     </section>
 
     <section class="admin-section" *ngIf="activeAdminTab === 'users'">

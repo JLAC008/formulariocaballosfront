@@ -1613,6 +1613,57 @@ dd {
   opacity: 0.35;
 }
 
+.bonus-pack-admin-form {
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr auto auto;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+}
+
+.bonus-pack-admin-form label {
+  color: #6f675f;
+  display: grid;
+  font-size: 13px;
+  gap: 7px;
+}
+
+.bonus-pack-admin-form input {
+  margin-top: 0;
+}
+
+.bonus-pack-active {
+  align-items: center !important;
+  display: flex !important;
+  min-height: 41px;
+}
+
+.bonus-pack-admin-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.bonus-pack-admin-card {
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr auto;
+  padding: 18px;
+}
+
+.bonus-pack-admin-card h3 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 26px;
+  margin: 8px 0 4px;
+}
+
+.bonus-pack-admin-card p {
+  color: #6f675f;
+  font-size: 14px;
+  margin: 0;
+}
+
 .stats-grid {
   display: grid;
   gap: 14px;
@@ -1842,6 +1893,7 @@ dd {
     grid-template-columns: 1fr;
   }
 
+  .bonus-pack-admin-form,
   .time-slot-grid,
   .custom-time-row {
     grid-template-columns: 1fr 1fr;
@@ -1851,6 +1903,8 @@ dd {
 @media (max-width: 560px) {
   .admin-kpis,
   .stats-grid,
+  .bonus-pack-admin-form,
+  .bonus-pack-admin-card,
   .schedule-slot {
     grid-template-columns: 1fr;
   }
