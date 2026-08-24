@@ -19,6 +19,8 @@ interface Experience {
   price: number;
   image: string;
   active: boolean;
+  fridayAvailable: boolean;
+  fridayHours: string[];
   hours: string[];
   hourMessages?: Record<string, string>;
 }
@@ -223,6 +225,8 @@ export class AppComponent {
   experienceForm: Experience = this.blankExperience();
   customExperienceHour = '';
   customExperienceHourError = '';
+  customFridayHour = '';
+  customFridayHourError = '';
   imageUploadError = '';
   imageUploadInProgress = false;
   isBonusCheckoutInProgress = false;
@@ -269,7 +273,12 @@ export class AppComponent {
   }
 
   get filteredExperiences(): Experience[] {
-    return this.experiences.filter((experience) => experience.active && experience.type === this.activeExperienceType);
+    const isFriday = this.selectedDate.getDay() === 5;
+    return this.experiences.filter((experience) =>
+      experience.active
+      && experience.type === this.activeExperienceType
+      && (!isFriday || (experience.fridayAvailable && this.getFridayExperienceHours(experience).length > 0))
+    );
   }
 
   get selectedExperiences(): Experience[] {
@@ -286,7 +295,11 @@ export class AppComponent {
 
   get availableHours(): string[] {
     if (this.selectedExperiences.length > 0) {
-      return this.getExperienceHours(this.selectedExperiences[0]);
+      return this.getExperienceHoursForDate(this.selectedExperiences[0], this.selectedDate);
+    }
+
+    if (this.selectedDate.getDay() === 5) {
+      return this.sortHours(this.filteredExperiences.flatMap((experience) => this.getFridayExperienceHours(experience)));
     }
 
     return this.sortHours([
@@ -296,9 +309,11 @@ export class AppComponent {
   }
 
   get adminScheduleHours(): string[] {
+    const adminDate = new Date(`${this.adminDate}T00:00:00`);
+    const baseHours = adminDate.getDay() === 5 ? [] : this.hours;
     return this.sortHours([
-      ...this.hours,
-      ...this.experiences.flatMap((experience) => this.getExperienceHours(experience)),
+      ...baseHours,
+      ...this.experiences.flatMap((experience) => this.getExperienceHoursForDate(experience, adminDate)),
       ...this.adminDayReservations.map((booking) => booking.hour)
     ]);
   }
@@ -309,6 +324,14 @@ export class AppComponent {
 
   get editableExperienceSelectedHours(): string[] {
     return this.getExperienceFormHours();
+  }
+
+  get editableFridayHours(): string[] {
+    return this.sortHours([...this.hours, ...this.getExperienceFormFridayHours()]);
+  }
+
+  get editableFridaySelectedHours(): string[] {
+    return this.getExperienceFormFridayHours();
   }
 
   get monthLabel(): string {
@@ -919,6 +942,7 @@ export class AppComponent {
     }
 
     this.selectedDate = new Date(day.date);
+    this.ensureSelectedHourAvailable();
     this.confirmation = '';
     this.warning = '';
   }
@@ -1440,6 +1464,7 @@ export class AppComponent {
       ? {
           ...experience,
           hours: this.getExperienceHours(experience),
+          fridayHours: this.getFridayExperienceHours(experience),
           hourMessages: this.sanitizeHourMessages(experience.hourMessages, this.getExperienceHours(experience))
         }
       : this.blankExperience();
@@ -1452,6 +1477,8 @@ export class AppComponent {
     this.experienceForm = this.blankExperience();
     this.customExperienceHour = '';
     this.customExperienceHourError = '';
+    this.customFridayHour = '';
+    this.customFridayHourError = '';
     this.imageUploadError = '';
     this.imageUploadInProgress = false;
   }
@@ -1508,6 +1535,7 @@ export class AppComponent {
       type: this.toBookingType(this.experienceForm.type),
       price: this.normalizeBonusCost(this.experienceForm.price),
       hours: this.sanitizeExperienceHours(this.experienceForm.hours),
+      fridayHours: this.sanitizeOptionalExperienceHours(this.experienceForm.fridayHours),
       hourMessages: this.sanitizeHourMessages(this.experienceForm.hourMessages, this.experienceForm.hours)
     };
 
@@ -1951,6 +1979,8 @@ export class AppComponent {
       price: this.normalizeBonusCost(item.price),
       image: item.image || 'assets/route-sendero.jpg',
       active: item.active !== false,
+      fridayAvailable: item.fridayAvailable === true,
+      fridayHours: Array.isArray(item.fridayHours) ? item.fridayHours : [],
       hours: Array.isArray(item.hours) ? item.hours : this.hours,
       hourMessages: item.hourMessages || {}
     };
@@ -1958,6 +1988,7 @@ export class AppComponent {
     return {
       ...experience,
       hours: this.getExperienceHours(experience),
+      fridayHours: this.getFridayExperienceHours(experience),
       hourMessages: this.sanitizeHourMessages(experience.hourMessages, experience.hours)
     };
   }
@@ -2103,6 +2134,32 @@ export class AppComponent {
     return this.getExperienceFormHours().includes(hour);
   }
 
+  toggleFridayHour(hour: string): void {
+    const currentHours = this.getExperienceFormFridayHours();
+    this.experienceForm = {
+      ...this.experienceForm,
+      fridayHours: currentHours.includes(hour)
+        ? currentHours.filter((selectedHour) => selectedHour !== hour)
+        : this.sortHours([...currentHours, hour])
+    };
+  }
+
+  removeFridayHour(hour: string): void {
+    const currentHours = this.getExperienceFormFridayHours();
+    if (!currentHours.includes(hour)) {
+      return;
+    }
+
+    this.experienceForm = {
+      ...this.experienceForm,
+      fridayHours: currentHours.filter((selectedHour) => selectedHour !== hour)
+    };
+  }
+
+  isFridayHourSelected(hour: string): boolean {
+    return this.getExperienceFormFridayHours().includes(hour);
+  }
+
   addCustomExperienceHour(): void {
     const hour = this.normalizeCustomExperienceHour(this.customExperienceHour);
     if (!this.isValidHour(hour)) {
@@ -2117,6 +2174,21 @@ export class AppComponent {
       hourMessages: { ...(this.experienceForm.hourMessages || {}) }
     };
     this.customExperienceHour = '';
+  }
+
+  addCustomFridayHour(): void {
+    const hour = this.normalizeCustomExperienceHour(this.customFridayHour);
+    if (!this.isValidHour(hour)) {
+      this.customFridayHourError = 'Introduce una hora válida con formato HH:MM.';
+      return;
+    }
+
+    this.customFridayHourError = '';
+    this.experienceForm = {
+      ...this.experienceForm,
+      fridayHours: this.sortHours([...this.getExperienceFormFridayHours(), hour])
+    };
+    this.customFridayHour = '';
   }
 
   private normalizeCustomExperienceHour(value: string): string {
@@ -2220,9 +2292,21 @@ export class AppComponent {
     return this.sanitizeExperienceHours(experience.hours);
   }
 
+  private getExperienceHoursForDate(experience: Experience, date: Date): string[] {
+    return date.getDay() === 5 ? this.getFridayExperienceHours(experience) : this.getExperienceHours(experience);
+  }
+
+  private getFridayExperienceHours(experience: Experience): string[] {
+    return this.sanitizeOptionalExperienceHours(experience.fridayHours);
+  }
+
   private sanitizeExperienceHours(hours?: string[]): string[] {
     const validHours = this.sortHours([...(hours || [])].filter((hour) => this.isValidHour(hour)));
     return validHours.length > 0 ? validHours : [...this.hours];
+  }
+
+  private sanitizeOptionalExperienceHours(hours?: string[]): string[] {
+    return this.sortHours([...(hours || [])].filter((hour) => this.isValidHour(hour)));
   }
 
   private sanitizeHourMessages(messages?: Record<string, string>, hours?: string[]): Record<string, string> {
@@ -2236,6 +2320,10 @@ export class AppComponent {
 
   private getExperienceFormHours(): string[] {
     return this.sortHours((this.experienceForm.hours || []).filter((hour) => this.isValidHour(hour)));
+  }
+
+  private getExperienceFormFridayHours(): string[] {
+    return this.sortHours((this.experienceForm.fridayHours || []).filter((hour) => this.isValidHour(hour)));
   }
 
   private removeHourMessage(hour: string): Record<string, string> {
@@ -2288,6 +2376,8 @@ export class AppComponent {
       price: 1,
       image: 'assets/route-sendero.jpg',
       active: true,
+      fridayAvailable: false,
+      fridayHours: [],
       hours: [...this.hours],
       hourMessages: {}
     };
@@ -2334,6 +2424,8 @@ export class AppComponent {
         price: 1,
         image: 'assets/route-sendero.jpg',
         active: true,
+        fridayAvailable: false,
+        fridayHours: [],
         hours: ['11:00', '18:00', '18:45', '19:30'],
         hourMessages: {}
       },
@@ -2347,6 +2439,8 @@ export class AppComponent {
         price: 1,
         image: 'assets/route-crepusculo.jpg',
         active: true,
+        fridayAvailable: false,
+        fridayHours: [],
         hours: ['11:00', '18:00', '18:45', '19:30'],
         hourMessages: {}
       }

@@ -746,6 +746,49 @@
             <input type="checkbox" name="experienceActive" [(ngModel)]="experienceForm.active">
             Visible para clientes
           </label>
+          <label class="check-line">
+            <input type="checkbox" name="experienceFridayAvailable" [(ngModel)]="experienceForm.fridayAvailable">
+            Disponible los viernes
+          </label>
+          <div class="form-field friday-time-field" *ngIf="experienceForm.fridayAvailable">
+            <span>Franjas de viernes</span>
+            <div class="time-slot-grid">
+              <button
+                type="button"
+                *ngFor="let hour of editableFridayHours"
+                [class.active]="isFridayHourSelected(hour)"
+                (click)="toggleFridayHour(hour)"
+              >
+                {{ hour }}
+              </button>
+            </div>
+            <div class="selected-time-list" *ngIf="editableFridaySelectedHours.length > 0">
+              <div class="selected-time-row" *ngFor="let hour of editableFridaySelectedHours">
+                <span>{{ hour }}</span>
+                <button
+                  type="button"
+                  class="history-action danger-action"
+                  (click)="removeFridayHour(hour)"
+                >
+                  Quitar
+                </button>
+              </div>
+            </div>
+            <div class="custom-time-row">
+              <input
+                type="text"
+                name="customFridayHour"
+                [(ngModel)]="customFridayHour"
+                inputmode="numeric"
+                maxlength="5"
+                placeholder="18:30"
+                autocomplete="off"
+              >
+              <button class="history-action" type="button" (click)="addCustomFridayHour()">Añadir hora de viernes</button>
+            </div>
+            <p class="warning" *ngIf="customFridayHourError">{{ customFridayHourError }}</p>
+            <p class="limit-note">Los viernes solo se usarán estas franjas, no las franjas normales.</p>
+          </div>
           <button class="pay-button" type="submit">Guardar</button>
         </form>
       </section>
