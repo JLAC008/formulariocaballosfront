@@ -14,10 +14,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g http-server
+RUN npm install -g serve
 
 COPY --from=builder /app/dist/centro-ecuestre-reservas/browser ./dist
 
 EXPOSE 8082
 
-CMD ["http-server", "./dist", "-p", "8082", "-c-1"]
+CMD ["serve", "-s", "./dist", "-l", "8082"]
