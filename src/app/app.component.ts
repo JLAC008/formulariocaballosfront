@@ -791,8 +791,11 @@ export class AppComponent {
         this.authError = error?.error || 'No se pudo crear la cuenta.';
         return;
       }
+      const auth = await response.json().catch(() => null);
       this.authError = '';
-      this.authNotice = 'Cuenta creada. Revisa tu email para confirmar el registro.';
+      this.authNotice = auth?.verificationResent
+        ? 'La cuenta ya estaba pendiente de verificación. Te hemos enviado un nuevo correo.'
+        : 'Te hemos enviado un correo para confirmar tu cuenta. Revisa tu bandeja de entrada.';
       this.verificationEmailSentTo = email;
       this.loginPassword = '';
     } catch {
