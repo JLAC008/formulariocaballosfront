@@ -84,7 +84,7 @@
             </div>
           </div>
           <button type="button" class="price" (click)="selectExperience(experience.id); $event.stopPropagation()">
-            Bono
+            {{ formatBonusCost(getExperienceBonusCost(experience)) }}
           </button>
           <span class="corner" *ngIf="selectedExperienceIds.includes(experience.id)" aria-hidden="true">✓</span>
         </article>
@@ -178,7 +178,7 @@
             </div>
             <div *ngIf="selectedExperiences.length > 0">
               <dt>Pago</dt>
-              <dd>{{ selectedExperiences.length }} bono{{ selectedExperiences.length === 1 ? '' : 's' }}</dd>
+              <dd>{{ formatBonusCost(selectedBonusCost) }}</dd>
             </div>
           </dl>
           <p class="selection-help" *ngIf="selectedExperiences.length === 0">Marca una experiencia para continuar.</p>
@@ -313,7 +313,7 @@
         </label>
         <p class="confirmation" *ngIf="authNotice">{{ authNotice }}</p>
         <p class="warning" *ngIf="authError">{{ authError }}</p>
-        <button class="pay-button" type="submit">{{ authMode === 'register' ? 'Crear cuenta' : authMode === 'forgot' ? 'Restablecer contraseña' : authMode === 'reset' ? 'Guardar contraseña' : 'Entrar' }}</button>
+        <button class="pay-button" type="submit" [disabled]="authInProgress">{{ authInProgress ? 'Enviando...' : authMode === 'register' ? 'Crear cuenta' : authMode === 'forgot' ? 'Restablecer contraseña' : authMode === 'reset' ? 'Guardar contraseña' : 'Entrar' }}</button>
       </form>
 
       <div class="auth-links" *ngIf="authMode === 'login'">
@@ -366,7 +366,6 @@
     <nav class="admin-tabs" aria-label="Administración">
       <button type="button" [class.active]="activeAdminTab === 'schedule'" (click)="setAdminTab('schedule')">Agenda</button>
       <button type="button" [class.active]="activeAdminTab === 'experiences'" (click)="setAdminTab('experiences')">Experiencias</button>
-      <button type="button" [class.active]="activeAdminTab === 'reservations'" (click)="setAdminTab('reservations')">Reservas</button>
       <button type="button" [class.active]="activeAdminTab === 'users'" (click)="setAdminTab('users')">Usuarios</button>
       <button type="button" [class.active]="activeAdminTab === 'stats'" (click)="setAdminTab('stats')">Estadísticas</button>
     </nav>
@@ -428,7 +427,7 @@
               <span>{{ experience.level }}</span>
               <span>{{ experience.duration }}</span>
               <span>{{ experience.hours.join(', ') }}</span>
-              <strong>{{ experience.price }} EUR</strong>
+              <strong>{{ formatBonusCost(getExperienceBonusCost(experience)) }}</strong>
             </div>
           </div>
           <div class="admin-card-actions">
@@ -439,59 +438,6 @@
             <button class="history-action danger-action" type="button" (click)="openDeleteExperienceModal(experience)">Eliminar</button>
           </div>
         </article>
-      </div>
-    </section>
-
-    <section class="admin-section" *ngIf="activeAdminTab === 'reservations'">
-      <div class="section-actions">
-        <div>
-          <h2>Reservas</h2>
-          <p>Actualiza estados y revisa pagos, clientes y teléfonos.</p>
-        </div>
-        <select [(ngModel)]="reservationFilter">
-          <option value="all">Todas</option>
-          <option value="CONFIRMED">Confirmadas</option>
-          <option value="COMPLETED">Completadas</option>
-          <option value="CANCELLED">Canceladas</option>
-        </select>
-      </div>
-
-      <div class="table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Experiencia</th>
-              <th>Cliente</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Pago</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let booking of filteredReservations">
-              <td>
-                <strong>{{ booking.title }}</strong>
-                <span>{{ getTypeLabel(booking.type) }}</span>
-              </td>
-              <td>
-                <strong>{{ booking.customerName }}</strong>
-                <span>{{ booking.phone }}</span>
-              </td>
-              <td>{{ booking.date }}</td>
-              <td>{{ booking.hour }}</td>
-              <td>{{ booking.payment }}</td>
-              <td>
-                <select [ngModel]="booking.status" (ngModelChange)="updateReservationStatus(booking.id, $event)">
-                  <option value="CONFIRMED">Confirmada</option>
-                  <option value="COMPLETED">Completada</option>
-                  <option value="CANCELLED">Cancelada</option>
-                </select>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="history-empty" *ngIf="filteredReservations.length === 0">No hay reservas con este filtro.</p>
       </div>
     </section>
 
@@ -592,8 +538,8 @@
               <input type="text" name="experienceDuration" [(ngModel)]="experienceForm.duration">
             </label>
             <label>
-              Precio
-              <input type="number" name="experiencePrice" [(ngModel)]="experienceForm.price" min="0">
+              Coste en bonos
+              <input type="number" name="experiencePrice" [(ngModel)]="experienceForm.price" min="1" max="10" step="1">
             </label>
           </div>
           <div class="form-field image-upload-field">
@@ -696,5 +642,6 @@
         </div>
       </section>
     </div>
+
   </main>
 </ng-container>

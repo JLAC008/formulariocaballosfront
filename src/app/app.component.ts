@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 type BookingType = 'lessons' | 'routes';
 type AppView = 'client' | 'login' | 'admin';
-type AdminTab = 'schedule' | 'experiences' | 'reservations' | 'users' | 'stats';
+type AdminTab = 'schedule' | 'experiences' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 type UserRole = 'guest' | 'customer' | 'admin';
@@ -182,8 +182,8 @@ export class AppComponent {
   registerPhone = '';
   authError = '';
   authNotice = '';
+  authInProgress = false;
   verificationEmailSentTo = '';
-  reservationFilter: 'all' | ReservationStatus = 'all';
   editingExperience: Experience | null = null;
   deletingExperience: Experience | null = null;
   cancellingScheduleGroup: AdminScheduleGroup | null = null;
@@ -335,11 +335,15 @@ export class AppComponent {
   get canReserve(): boolean {
     return this.selectedExperiences.length > 0
       && this.currentUser !== null
-      && this.lessonBonuses >= this.selectedExperiences.length
+      && this.lessonBonuses >= this.selectedBonusCost
       && this.isSelectedHourAvailable
       && !this.hasCurrentUserBookedSelectedSlot
       && !this.isSelectedSlotFull
       && !this.isSelectedSlotPast;
+  }
+
+  get selectedBonusCost(): number {
+    return this.selectedExperiences.reduce((sum, experience) => sum + this.getExperienceBonusCost(experience), 0);
   }
 
   get isSelectedHourAvailable(): boolean {
@@ -408,10 +412,6 @@ export class AppComponent {
     });
 
     return [...groups.values()].sort((first, second) => first.title.localeCompare(second.title));
-  }
-
-  get filteredReservations(): BookingHistoryItem[] {
-    return this.bookingHistory.filter((booking) => this.reservationFilter === 'all' || booking.status === this.reservationFilter);
   }
 
   get activeExperiencesCount(): number {
@@ -753,6 +753,10 @@ export class AppComponent {
   }
 
   async register(): Promise<void> {
+    if (this.authInProgress) {
+      return;
+    }
+
     const email = this.loginUser.trim().toLowerCase();
     const password = this.loginPassword;
     const firstName = this.registerName.trim().replace(/\s+/g, ' ');
@@ -781,6 +785,7 @@ export class AppComponent {
     }
 
     try {
+      this.authInProgress = true;
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -800,6 +805,8 @@ export class AppComponent {
       this.loginPassword = '';
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
+    } finally {
+      this.authInProgress = false;
     }
   }
 
@@ -894,7 +901,9 @@ export class AppComponent {
       return;
     }
 
-    if (this.lessonBonuses < selectedCount) {
+    const bonusCost = this.selectedBonusCost;
+
+    if (this.lessonBonuses < bonusCost) {
       this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas experiencias.';
       this.confirmation = '';
       return;
@@ -973,7 +982,7 @@ export class AppComponent {
       this.setCurrentUserBonuses(saved.remainingBonuses);
     }
 
-    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
+    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
     this.reservationNoticeMessage = this.getSelectedHourMessage();
     this.isReservationModalOpen = true;
     this.confirmation = '';
@@ -1143,7 +1152,7 @@ export class AppComponent {
     const form = {
       ...this.experienceForm,
       type: this.toBookingType(this.experienceForm.type),
-      price: Number(this.experienceForm.price),
+      price: this.normalizeBonusCost(this.experienceForm.price),
       hours: this.sanitizeExperienceHours(this.experienceForm.hours),
       hourMessages: this.sanitizeHourMessages(this.experienceForm.hourMessages, this.experienceForm.hours)
     };
@@ -1253,12 +1262,6 @@ export class AppComponent {
     this.closeCancelClassModal();
   }
 
-  updateReservationStatus(id: number, status: ReservationStatus): void {
-    this.bookingHistory = this.bookingHistory.map((booking) => booking.id === id ? { ...booking, status } : booking);
-    this.persistBookings();
-    void this.syncAdminState();
-  }
-
   getTypeLabel(type: BookingType): string {
     return type === 'routes' ? 'Ruta' : 'Clase';
   }
@@ -1297,7 +1300,25 @@ export class AppComponent {
   }
 
   private getBookingBonusAmount(booking: BookingHistoryItem): number {
-    return booking.status === 'CONFIRMED' ? 1 : 0;
+    if (booking.status !== 'CONFIRMED') {
+      return 0;
+    }
+
+    return this.normalizeBonusCost(booking.amount);
+  }
+
+  getExperienceBonusCost(experience: Experience): number {
+    return this.normalizeBonusCost(experience.price);
+  }
+
+  formatBonusCost(cost: number): string {
+    const normalized = this.normalizeBonusCost(cost);
+    return `${normalized} bono${normalized === 1 ? '' : 's'}`;
+  }
+
+  private normalizeBonusCost(value: unknown): number {
+    const cost = Math.ceil(Number(value));
+    return Number.isFinite(cost) && cost > 0 && cost <= 10 ? cost : 1;
   }
 
   private getCancellableScheduleGroupBookings(): BookingHistoryItem[] {
@@ -1488,7 +1509,7 @@ export class AppComponent {
       description: item.description || '',
       level: item.level || '',
       duration: item.duration || '',
-      price: Number(item.price || 0),
+      price: this.normalizeBonusCost(item.price),
       image: item.image || 'assets/route-sendero.jpg',
       active: item.active !== false,
       hours: Array.isArray(item.hours) ? item.hours : this.hours,
@@ -1754,7 +1775,7 @@ export class AppComponent {
       description: '',
       level: 'Principiante',
       duration: '60 min',
-      price: 45,
+      price: 1,
       image: 'assets/route-sendero.jpg',
       active: true,
       hours: [...this.hours],
@@ -1771,7 +1792,7 @@ export class AppComponent {
         description: 'Sesión guiada en pista para aprender postura, control básico y seguridad desde cero.',
         level: 'Principiante',
         duration: '60 min',
-        price: 38,
+        price: 1,
         image: 'assets/route-sendero.jpg',
         active: true,
         hours: ['11:00', '18:00', '18:45', '19:30'],
@@ -1784,7 +1805,7 @@ export class AppComponent {
         description: 'Trabajo personalizado para mejorar ayudas, asiento y confianza con seguimiento individual.',
         level: 'Intermedio',
         duration: '75 min',
-        price: 55,
+        price: 1,
         image: 'assets/route-crepusculo.jpg',
         active: true,
         hours: ['11:00', '18:00', '18:45', '19:30'],
