@@ -176,7 +176,7 @@ export class AppComponent {
   activeExperienceType: BookingType = 'lessons';
   selectedExperienceIds: number[] = [];
   visibleMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
-  selectedDate = new Date(this.minDate);
+  selectedDate = this.getNextBookableDate(this.minDate);
   adminDate = this.toDateKey(this.minDate);
   selectedHour = '18:00';
   currentUserId: number | null = this.getStoredCustomerId();
@@ -961,6 +961,12 @@ export class AppComponent {
     }
 
     const bonusCost = this.selectedBonusCost;
+
+    if (!this.isInBookingRange(this.selectedDate)) {
+      this.warning = 'Las experiencias no están disponibles sábados ni domingos. Elige un día entre semana.';
+      this.confirmation = '';
+      return;
+    }
 
     if (this.lessonBonuses < bonusCost) {
       this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas experiencias.';
@@ -2058,7 +2064,9 @@ export class AppComponent {
 
   isHourBooked(hour: string): boolean {
     const dateKey = this.toDateKey(this.selectedDate);
-    return (this.selectedExperience ? this.isSlotFull(this.selectedExperience, dateKey, hour) : false) || this.isSlotPast(dateKey, hour);
+    return !this.isInBookingRange(this.selectedDate)
+      || (this.selectedExperience ? this.isSlotFull(this.selectedExperience, dateKey, hour) : false)
+      || this.isSlotPast(dateKey, hour);
   }
 
   toggleExperienceHour(hour: string): void {
@@ -2359,7 +2367,19 @@ export class AppComponent {
 
   private isInBookingRange(date: Date): boolean {
     const day = this.startOfDay(date);
-    return day >= this.minDate && day <= this.maxDate;
+    return day >= this.minDate && day <= this.maxDate && !this.isWeekend(day);
+  }
+
+  private getNextBookableDate(date: Date): Date {
+    const nextDate = this.startOfDay(date);
+    while (this.isWeekend(nextDate)) {
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+    return nextDate;
+  }
+
+  private isWeekend(date: Date): boolean {
+    return date.getDay() === 0 || date.getDay() === 6;
   }
 
   private isSameDate(first: Date, second: Date): boolean {
