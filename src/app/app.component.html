@@ -194,7 +194,7 @@
       </aside>
     </section>
 
-    <div class="modal-backdrop" *ngIf="isBonusModalOpen" (click)="closeBonusModal()">
+    <div class="modal-backdrop" *ngIf="isBonusModalOpen">
       <section class="bonus-modal" role="dialog" aria-modal="true" aria-labelledby="bonus-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeBonusModal()">x</button>
         <p class="eyebrow modal-eyebrow">Bonos de experiencias</p>
@@ -237,6 +237,17 @@
           <p>{{ reservationNoticeMessage }}</p>
         </div>
         <button class="pay-button modal-action" type="button" (click)="closeReservationModal()">Aceptar</button>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isLowBonusModalOpen" (click)="closeLowBonusModal()">
+      <section class="bonus-modal low-bonus-modal" role="dialog" aria-modal="true" aria-labelledby="low-bonus-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeLowBonusModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Bonos disponibles</p>
+        <h2 id="low-bonus-modal-title">Te queda 1 bono</h2>
+        <p class="modal-copy">Puedes comprar más bonos ahora para tenerlos listos para tu próxima reserva.</p>
+        <button class="pay-button modal-action" type="button" (click)="buyBonusesFromLowBonusModal()">Comprar más bonos</button>
+        <button class="buy-button modal-action" type="button" (click)="closeLowBonusModal()">Ahora no</button>
       </section>
     </div>
 

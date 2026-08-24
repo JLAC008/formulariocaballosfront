@@ -179,6 +179,7 @@ export class AppComponent {
   currentUserId: number | null = this.getStoredCustomerId();
   isBonusModalOpen = false;
   isReservationModalOpen = false;
+  isLowBonusModalOpen = false;
   isHistoryModalOpen = false;
   isProfileModalOpen = false;
   isExperienceModalOpen = false;
@@ -187,6 +188,7 @@ export class AppComponent {
   isAccountMenuOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
+  showLowBonusAfterReservation = false;
   customerName = this.currentUser?.name || 'Paco Martinez';
   phone = this.currentUser?.phone || '633 443 322';
   confirmation = '';
@@ -1024,6 +1026,7 @@ export class AppComponent {
     this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
     this.reservationNoticeMessage = this.getSelectedHourMessage();
     this.closeAllModals();
+    this.showLowBonusAfterReservation = this.lessonBonuses === 1;
     this.isReservationModalOpen = true;
     this.confirmation = '';
     this.warning = this.lessonBonuses === 0
@@ -1047,9 +1050,22 @@ export class AppComponent {
     this.isBonusModalOpen = false;
   }
 
+  closeLowBonusModal(): void {
+    this.isLowBonusModalOpen = false;
+  }
+
+  buyBonusesFromLowBonusModal(): void {
+    this.closeLowBonusModal();
+    this.openBonusModal();
+  }
+
   closeReservationModal(): void {
     this.isReservationModalOpen = false;
     this.reservationNoticeMessage = '';
+    if (this.showLowBonusAfterReservation) {
+      this.showLowBonusAfterReservation = false;
+      this.isLowBonusModalOpen = true;
+    }
   }
 
   openHistoryModal(): void {
@@ -1761,12 +1777,14 @@ export class AppComponent {
   private closeAllModals(): void {
     this.isBonusModalOpen = false;
     this.isReservationModalOpen = false;
+    this.isLowBonusModalOpen = false;
     this.isHistoryModalOpen = false;
     this.isProfileModalOpen = false;
     this.isExperienceModalOpen = false;
     this.isDeleteExperienceModalOpen = false;
     this.isCancelClassModalOpen = false;
     this.reservationNoticeMessage = '';
+    this.showLowBonusAfterReservation = false;
     this.profileError = '';
     this.profileNotice = '';
     this.passwordError = '';
