@@ -44,7 +44,7 @@
         <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
         <h1>Reserva tu <span>experiencia</span></h1>
         <p class="intro">
-          Clases de equitación y rutas adaptadas a tu nivel, con bonos guardados en tu cuenta.
+          Clases de equitación y rutas adaptadas a tu nivel, con sesiones guardadas en tu cuenta.
           Elige tu experiencia y asegura tu plaza.
         </p>
       </div>
@@ -145,12 +145,12 @@
       </div>
 
       <aside class="summary-column">
-        <h2 class="section-title">Bonos</h2>
+        <h2 class="section-title">Sesiones</h2>
         <div class="bonus-box always-visible" [class.empty]="lessonBonuses === 0">
-          <span>{{ currentUser ? 'Bonos de ' + currentUser.name : 'Inicia sesión para tener bonos' }}</span>
+          <span>{{ currentUser ? 'Sesiones de ' + currentUser.name : 'Inicia sesión para tener sesiones' }}</span>
           <strong>{{ lessonBonuses }}</strong>
         </div>
-        <p class="limit-note">Los bonos se guardan en tu cuenta y se descuentan solo al reservar experiencias.</p>
+        <p class="limit-note">Las sesiones se guardan en tu cuenta y se descuentan solo al reservar experiencias.</p>
 
         <div class="session-box" *ngIf="currentUser">
           <strong>{{ currentUser.name }}</strong>
@@ -187,7 +187,7 @@
         <button class="pay-button" type="button" (click)="reserve()">
           {{ actionLabel }}
         </button>
-        <button class="buy-button" type="button" (click)="openBonusModal()">Comprar mas bonos</button>
+        <button class="buy-button" type="button" (click)="openBonusModal()">Comprar más sesiones</button>
         <p class="secure">{{ actionHelpText }}</p>
         <p class="warning" *ngIf="warning">{{ warning }}</p>
         <p class="confirmation" *ngIf="confirmation">{{ confirmation }}</p>
@@ -197,17 +197,17 @@
     <div class="modal-backdrop" *ngIf="isBonusModalOpen">
       <section class="bonus-modal" role="dialog" aria-modal="true" aria-labelledby="bonus-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeBonusModal()">x</button>
-        <p class="eyebrow modal-eyebrow">Bonos de experiencias</p>
-        <h2 id="bonus-modal-title">Comprar bonos</h2>
-        <p class="modal-copy">Elige un pack. Los bonos se añaden cuando Stripe confirma el pago.</p>
+        <p class="eyebrow modal-eyebrow">Sesiones de experiencias</p>
+        <h2 id="bonus-modal-title">Comprar sesiones</h2>
+        <p class="modal-copy">Elige un pack. Las sesiones se añaden cuando Stripe confirma el pago.</p>
         <div class="bonus-pack-grid">
           <button type="button" *ngFor="let pack of bonusPacks" (click)="purchaseBonuses(pack)" [disabled]="isBonusCheckoutInProgress">
             <strong>{{ pack.amount }}</strong>
-            <span>{{ pack.amount === 1 ? 'bono' : 'bonos' }}</span>
+            <span>{{ pack.amount === 1 ? 'sesión' : 'sesiones' }}</span>
             <em>{{ isBonusCheckoutInProgress ? 'Abriendo Stripe...' : pack.price + ' ' + pack.currency.toUpperCase() }}</em>
           </button>
         </div>
-        <p class="history-empty" *ngIf="bonusPacks.length === 0">No hay packs de bonos disponibles ahora mismo.</p>
+        <p class="history-empty" *ngIf="bonusPacks.length === 0">No hay packs de sesiones disponibles ahora mismo.</p>
       </section>
     </div>
 
@@ -216,7 +216,7 @@
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeMissingExperienceModal()">x</button>
         <p class="eyebrow modal-eyebrow">Reserva pendiente</p>
         <h2 id="missing-experience-modal-title">Selecciona una experiencia</h2>
-        <p class="modal-copy">Para reservar con bono primero tienes que elegir una clase o una ruta.</p>
+        <p class="modal-copy">Para reservar con sesión primero tienes que elegir una clase o una ruta.</p>
         <button class="pay-button modal-action" type="button" (click)="closeMissingExperienceModal()">Aceptar</button>
       </section>
     </div>
@@ -253,10 +253,10 @@
     <div class="modal-backdrop" *ngIf="isLowBonusModalOpen" (click)="closeLowBonusModal()">
       <section class="bonus-modal low-bonus-modal" role="dialog" aria-modal="true" aria-labelledby="low-bonus-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeLowBonusModal()">x</button>
-        <p class="eyebrow modal-eyebrow">Bonos disponibles</p>
-        <h2 id="low-bonus-modal-title">Te queda 1 bono</h2>
-        <p class="modal-copy">Puedes comprar más bonos ahora para tenerlos listos para tu próxima reserva.</p>
-        <button class="pay-button modal-action" type="button" (click)="buyBonusesFromLowBonusModal()">Comprar más bonos</button>
+        <p class="eyebrow modal-eyebrow">Sesiones disponibles</p>
+        <h2 id="low-bonus-modal-title">Te queda 1 sesión</h2>
+        <p class="modal-copy">Puedes comprar más sesiones ahora para tenerlas listas para tu próxima reserva.</p>
+        <button class="pay-button modal-action" type="button" (click)="buyBonusesFromLowBonusModal()">Comprar más sesiones</button>
         <button class="buy-button modal-action" type="button" (click)="closeLowBonusModal()">Ahora no</button>
       </section>
     </div>
@@ -275,7 +275,7 @@
               <span class="history-meta-line">
                 {{ booking.hour }} · {{ booking.payment }}
                 <em [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">{{ getStatusLabel(booking.status) }}</em>
-                <small *ngIf="booking.status === 'CANCELLED'">Bonos devueltos</small>
+                <small *ngIf="booking.status === 'CANCELLED'">Sesiones devueltas</small>
               </span>
             </div>
           </article>
@@ -341,7 +341,7 @@
           ? 'Introduce tu email y te enviaremos un enlace para cambiar la contraseña.'
           : authMode === 'reset'
             ? 'Escribe una nueva contraseña para recuperar el acceso a tu cuenta.'
-            : 'Entra como cliente para comprar bonos y conservarlos, o accede como administrador.' }}
+            : 'Entra como cliente para comprar sesiones y conservarlas, o accede como administrador.' }}
        </p>
 
       <div class="auth-switch" *ngIf="authMode !== 'forgot' && authMode !== 'reset'">
@@ -420,7 +420,7 @@
         <strong>{{ confirmedReservationsCount }}</strong>
       </article>
       <article>
-        <span>Bonos disponibles</span>
+        <span>Sesiones disponibles</span>
         <strong>{{ totalUserBonuses }}</strong>
       </article>
       <article>
@@ -432,7 +432,7 @@
     <nav class="admin-tabs" aria-label="Administración">
       <button type="button" [class.active]="activeAdminTab === 'schedule'" (click)="setAdminTab('schedule')">Agenda</button>
       <button type="button" [class.active]="activeAdminTab === 'experiences'" (click)="setAdminTab('experiences')">Experiencias</button>
-      <button type="button" [class.active]="activeAdminTab === 'bonusPacks'" (click)="setAdminTab('bonusPacks')">Bonos</button>
+      <button type="button" [class.active]="activeAdminTab === 'bonusPacks'" (click)="setAdminTab('bonusPacks')">Sesiones</button>
       <button type="button" [class.active]="activeAdminTab === 'users'" (click)="setAdminTab('users')">Usuarios</button>
       <button type="button" [class.active]="activeAdminTab === 'stats'" (click)="setAdminTab('stats')">Estadísticas</button>
     </nav>
@@ -511,8 +511,8 @@
     <section class="admin-section" *ngIf="activeAdminTab === 'bonusPacks'">
       <div class="section-actions">
         <div>
-          <h2>Packs de bonos</h2>
-          <p>Crea los packs que verá el cliente al comprar bonos.</p>
+          <h2>Packs de sesiones</h2>
+          <p>Crea los packs que verá el cliente al comprar sesiones.</p>
         </div>
         <button class="history-action" type="button" (click)="resetBonusPackForm()">Nuevo pack</button>
       </div>
@@ -523,7 +523,7 @@
           <input type="text" name="bonusPackName" [(ngModel)]="bonusPackForm.name" required>
         </label>
         <label>
-          Bonos
+          Sesiones
           <input type="number" name="bonusPackAmount" [(ngModel)]="bonusPackForm.amount" min="1" step="1" required>
         </label>
         <label>
@@ -543,7 +543,7 @@
           <div>
             <span class="type-pill">{{ pack.active ? 'Activo' : 'Inactivo' }}</span>
             <h3>{{ pack.name }}</h3>
-            <p>{{ pack.amount }} bono{{ pack.amount === 1 ? '' : 's' }} · {{ pack.price }} {{ pack.currency.toUpperCase() }}</p>
+            <p>{{ pack.amount }} sesión{{ pack.amount === 1 ? '' : 'es' }} · {{ pack.price }} {{ pack.currency.toUpperCase() }}</p>
           </div>
           <div class="admin-card-actions">
             <button class="buy-button" type="button" (click)="editBonusPack(pack)">Editar</button>
@@ -558,8 +558,8 @@
     <section class="admin-section" *ngIf="activeAdminTab === 'users'">
       <div class="section-actions">
         <div>
-          <h2>Usuarios y bonos</h2>
-          <p>Consulta que clientes tienen bonos guardados y cuantas reservas han hecho.</p>
+          <h2>Usuarios y sesiones</h2>
+          <p>Consulta qué clientes tienen sesiones guardadas y cuántas reservas han hecho.</p>
         </div>
       </div>
 
@@ -584,8 +584,8 @@
             <tr>
               <th>Cliente</th>
               <th>Contacto</th>
-              <th>Bonos</th>
-              <th>Ajustar bonos</th>
+              <th>Sesiones</th>
+              <th>Ajustar sesiones</th>
               <th>Reservas</th>
               <th>Alta</th>
             </tr>
@@ -600,8 +600,8 @@
               <td><strong>{{ user.bonuses }}</strong></td>
               <td>
                 <div class="bonus-admin-actions">
-                  <input type="number" min="0" step="1" [(ngModel)]="userBonusAdjustments[user.id]" placeholder="Bonos">
-                  <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, 1)">Anadir</button>
+                  <input type="number" min="0" step="1" [(ngModel)]="userBonusAdjustments[user.id]" placeholder="Sesiones">
+                  <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, 1)">Añadir</button>
                   <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, -1)" [disabled]="user.bonuses === 0">Quitar</button>
                 </div>
               </td>
@@ -619,7 +619,7 @@
       <div class="section-actions">
         <div>
           <h2>Estadísticas</h2>
-          <p>Resumen comercial de reservas, bonos y experiencias populares.</p>
+          <p>Resumen comercial de reservas, sesiones y experiencias populares.</p>
         </div>
       </div>
       <div class="stats-grid">
@@ -628,7 +628,7 @@
           <strong>{{ bookingHistory.length }}</strong>
         </article>
         <article>
-          <span>Bonos cliente</span>
+          <span>Sesiones cliente</span>
           <strong>{{ totalUserBonuses }}</strong>
         </article>
         <article>
@@ -668,7 +668,7 @@
               <input type="text" name="experienceDuration" [(ngModel)]="experienceForm.duration">
             </label>
             <label>
-              Coste en bonos
+              Coste en sesiones
               <input type="number" name="experiencePrice" [(ngModel)]="experienceForm.price" min="1" max="10" step="1">
             </label>
           </div>
@@ -804,7 +804,7 @@
         </p>
         <p class="modal-copy" *ngIf="deletingExperienceReservationsCount > 0">
           Esta experiencia tiene {{ deletingExperienceReservationsCount }} reserva{{ deletingExperienceReservationsCount === 1 ? '' : 's' }} confirmada{{ deletingExperienceReservationsCount === 1 ? '' : 's' }}.
-          Se cancelarán y se devolverán {{ deletingExperienceRefundBonusesCount }} bono{{ deletingExperienceRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
+          Se cancelarán y se devolverán {{ deletingExperienceRefundBonusesCount }} sesión{{ deletingExperienceRefundBonusesCount === 1 ? '' : 'es' }} a sus usuarios.
         </p>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeDeleteExperienceModal()">Cancelar</button>
@@ -820,7 +820,7 @@
         <h2 id="cancel-class-modal-title">{{ cancellingScheduleGroup?.title }}</h2>
         <p class="modal-copy">
           Se cancelarán {{ cancellingClassReservationsCount }} reserva{{ cancellingClassReservationsCount === 1 ? '' : 's' }} confirmada{{ cancellingClassReservationsCount === 1 ? '' : 's' }} de esta experiencia a las {{ cancellingScheduleGroup?.hour }}.
-          Se devolverán {{ cancellingClassRefundBonusesCount }} bono{{ cancellingClassRefundBonusesCount === 1 ? '' : 's' }} a sus usuarios.
+          Se devolverán {{ cancellingClassRefundBonusesCount }} sesión{{ cancellingClassRefundBonusesCount === 1 ? '' : 'es' }} a sus usuarios.
         </p>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeCancelClassModal()">Volver</button>

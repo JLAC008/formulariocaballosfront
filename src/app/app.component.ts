@@ -389,11 +389,11 @@ export class AppComponent {
   }
 
   get actionLabel(): string {
-    return 'Reservar con bono';
+    return 'Reservar sesión';
   }
 
   get actionHelpText(): string {
-    return 'Debes iniciar sesión para usar o comprar bonos';
+    return 'Debes iniciar sesión para usar o comprar sesiones';
   }
 
   get canReserve(): boolean {
@@ -774,13 +774,13 @@ export class AppComponent {
     window.history.replaceState({}, document.title, window.location.pathname || '/');
 
     if (result === 'cancel') {
-      this.warning = 'Pago cancelado. No se han añadido bonos.';
+      this.warning = 'Pago cancelado. No se han añadido sesiones.';
       return;
     }
 
     const token = this.getAuthToken();
     if (!token || !sessionId) {
-      this.warning = 'No se pudo confirmar el pago. Inicia sesión y revisa tus bonos.';
+      this.warning = 'No se pudo confirmar el pago. Inicia sesión y revisa tus sesiones.';
       return;
     }
 
@@ -799,7 +799,7 @@ export class AppComponent {
         this.upsertCurrentUser(payment.user);
       }
       if (payment.status === 'COMPLETED') {
-        this.confirmation = `Pago confirmado. Se han añadido ${payment.bonuses} bono${payment.bonuses === 1 ? '' : 's'} a tu cuenta.`;
+        this.confirmation = `Pago confirmado. Se han añadido ${payment.bonuses} sesión${payment.bonuses === 1 ? '' : 'es'} a tu cuenta.`;
         this.warning = '';
       } else {
         this.warning = 'El pago todavía no aparece como completado. Vuelve a intentarlo en unos segundos.';
@@ -987,7 +987,7 @@ export class AppComponent {
     }
 
     if (!this.currentUser) {
-      this.warning = 'Inicia sesión o crea una cuenta para reservar experiencias con bonos.';
+      this.warning = 'Inicia sesión o crea una cuenta para reservar experiencias con sesiones.';
       this.showLogin('login');
       return;
     }
@@ -1001,7 +1001,7 @@ export class AppComponent {
     }
 
     if (this.lessonBonuses < bonusCost) {
-      this.warning = 'No tienes bonos suficientes. Compra mas bonos para poder reservar estas experiencias.';
+      this.warning = 'No tienes sesiones suficientes. Compra más sesiones para poder reservar estas experiencias.';
       this.confirmation = '';
       return;
     }
@@ -1080,20 +1080,20 @@ export class AppComponent {
       this.setCurrentUserBonuses(saved.remainingBonuses);
     }
 
-    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} bono${this.lessonBonuses === 1 ? '' : 's'}.`;
+    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} sesión${this.lessonBonuses === 1 ? '' : 'es'}.`;
     this.reservationNoticeMessage = this.getSelectedHourMessage();
     this.closeAllModals();
     this.showLowBonusAfterReservation = this.lessonBonuses === 1;
     this.isReservationModalOpen = true;
     this.confirmation = '';
     this.warning = this.lessonBonuses === 0
-      ? 'Has agotado tus bonos. Compra mas bonos para reservar nuevas experiencias.'
+      ? 'Has agotado tus sesiones. Compra más sesiones para reservar nuevas experiencias.'
       : '';
   }
 
   openBonusModal(): void {
     if (!this.currentUser) {
-      this.warning = 'Para comprar bonos necesitas iniciar sesión o crear una cuenta.';
+      this.warning = 'Para comprar sesiones necesitas iniciar sesión o crear una cuenta.';
       this.showLogin('login');
       return;
     }
@@ -1136,7 +1136,7 @@ export class AppComponent {
 
   openHistoryModal(): void {
     if (!this.currentUser) {
-      this.warning = 'Inicia sesión para ver tus reservas y bonos.';
+      this.warning = 'Inicia sesión para ver tus reservas y sesiones.';
       this.showLogin('login');
       return;
     }
@@ -1367,14 +1367,14 @@ export class AppComponent {
       const response = await fetch(`${API_URL}/admin/bonus-packs`, { headers: { Authorization: `Bearer ${token}` } });
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
-        this.bonusPackError = 'No se pudieron cargar los packs de bonos.';
+        this.bonusPackError = 'No se pudieron cargar los packs de sesiones.';
         return;
       }
       const packs = await response.json();
       this.adminBonusPacks = Array.isArray(packs) ? packs.map((pack: any) => this.toBonusPack(pack)) : [];
       this.bonusPackError = '';
     } catch {
-      this.bonusPackError = 'No se pudieron cargar los packs de bonos.';
+      this.bonusPackError = 'No se pudieron cargar los packs de sesiones.';
     }
   }
 
@@ -1705,7 +1705,7 @@ export class AppComponent {
 
   formatBonusCost(cost: number): string {
     const normalized = this.normalizeBonusCost(cost);
-    return `${normalized} bono${normalized === 1 ? '' : 's'}`;
+    return `${normalized} sesión${normalized === 1 ? '' : 'es'}`;
   }
 
   private normalizeBonusCost(value: unknown): number {
@@ -2034,7 +2034,7 @@ export class AppComponent {
     const priceCents = Number(item.priceCents ?? Math.round(Number(item.price || 0) * 100));
     return {
       id: Number(item.id || Date.now()),
-      name: item.name || `${Number(item.bonuses || item.amount || 1)} bono${Number(item.bonuses || item.amount || 1) === 1 ? '' : 's'}`,
+      name: item.name || `${Number(item.bonuses || item.amount || 1)} sesión${Number(item.bonuses || item.amount || 1) === 1 ? '' : 'es'}`,
       amount: Math.max(1, Number(item.bonuses || item.amount || 1)),
       price: Math.max(1, priceCents / 100),
       priceCents: Math.max(100, priceCents),
@@ -2051,7 +2051,7 @@ export class AppComponent {
       return null;
     }
     if (!Number.isFinite(amount) || amount < 1) {
-      this.bonusPackError = 'El pack debe tener al menos 1 bono.';
+      this.bonusPackError = 'El pack debe tener al menos 1 sesión.';
       return null;
     }
     if (!Number.isFinite(price) || price < 1) {
@@ -2394,7 +2394,7 @@ export class AppComponent {
   private blankBonusPack(): BonusPack {
     return {
       id: 0,
-      name: 'Pack 5 bonos',
+      name: 'Pack 5 sesiones',
       amount: 5,
       price: 100,
       priceCents: 10000,
