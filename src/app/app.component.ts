@@ -69,6 +69,16 @@ interface CustomerUser {
   updatedAt?: string;
 }
 
+interface AdminUserForm {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  password: string;
+  role: 'USER' | 'ADMIN';
+  sessions: number;
+}
+
 interface ProfileForm {
   firstName: string;
   lastName: string;
@@ -192,6 +202,7 @@ export class AppComponent {
   isExperienceModalOpen = false;
   isDeleteExperienceModalOpen = false;
   isCancelClassModalOpen = false;
+  isAdminUserModalOpen = false;
   isAccountMenuOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
@@ -236,6 +247,10 @@ export class AppComponent {
   editingBonusPack: BonusPack | null = null;
   bonusPackError = '';
   userBonusAdjustments: Record<number, number> = {};
+  adminUserForm: AdminUserForm = this.blankAdminUserForm();
+  adminUserError = '';
+  adminUserNotice = '';
+  adminUserInProgress = false;
 
   constructor() {
     this.clearLegacyAuthStorage();
@@ -1719,6 +1734,97 @@ export class AppComponent {
     return this.bookingHistory.filter((booking) => booking.userId === userId).length;
   }
 
+  openAdminUserModal(): void {
+    this.closeAllModals();
+    this.adminUserForm = this.blankAdminUserForm();
+    this.adminUserError = '';
+    this.adminUserNotice = '';
+    this.isAdminUserModalOpen = true;
+  }
+
+  closeAdminUserModal(): void {
+    this.isAdminUserModalOpen = false;
+    this.adminUserForm = this.blankAdminUserForm();
+    this.adminUserError = '';
+    this.adminUserInProgress = false;
+  }
+
+  async createAdminManagedUser(): Promise<void> {
+    const firstName = this.adminUserForm.firstName.trim().replace(/\s+/g, ' ');
+    const lastName = this.adminUserForm.lastName.trim().replace(/\s+/g, ' ');
+    const phone = this.adminUserForm.phone.trim().replace(/[\s-]/g, '');
+    const email = this.adminUserForm.email.trim().toLowerCase();
+    const password = this.adminUserForm.password;
+    const sessions = Math.max(0, Math.floor(Number(this.adminUserForm.sessions) || 0));
+
+    this.adminUserError = '';
+    this.adminUserNotice = '';
+
+    if (!NAME_PATTERN.test(firstName) || !NAME_PATTERN.test(lastName)) {
+      this.adminUserError = 'Introduce nombre y apellidos válidos.';
+      return;
+    }
+
+    if (!SPANISH_PHONE_PATTERN.test(phone)) {
+      this.adminUserError = 'Introduce un teléfono español válido.';
+      return;
+    }
+
+    if (!EMAIL_PATTERN.test(email)) {
+      this.adminUserError = 'Introduce un correo válido.';
+      return;
+    }
+
+    if (!PASSWORD_PATTERN.test(password)) {
+      this.adminUserError = 'La contraseña debe tener 8 caracteres, mayúscula, minúscula y número.';
+      return;
+    }
+
+    const token = this.getAuthToken();
+    if (!token) {
+      this.adminUserError = 'Inicia sesión como administrador para crear usuarios.';
+      return;
+    }
+
+    this.adminUserInProgress = true;
+    try {
+      const response = await fetch(`${API_URL}/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          phone: phone.startsWith('+34') ? phone : `+34${phone}`,
+          email,
+          password,
+          role: this.adminUserForm.role,
+          sessions
+        })
+      });
+
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.adminUserError = error?.error || 'No se pudo crear el usuario.';
+        return;
+      }
+
+      const created = this.toCustomerUser(await response.json());
+      this.users = [created, ...this.users.filter((user) => user.id !== created.id)];
+      this.persistUsers();
+      this.adminUserForm = this.blankAdminUserForm();
+      this.adminUserNotice = 'Usuario creado correctamente.';
+      this.isAdminUserModalOpen = false;
+    } catch {
+      this.adminUserError = 'No se pudo conectar con el servidor.';
+    } finally {
+      this.adminUserInProgress = false;
+    }
+  }
+
   getExperienceReservationsCount(experience: Experience): number {
     return this.getDeletableExperienceBookings(experience).length;
   }
@@ -1893,6 +1999,7 @@ export class AppComponent {
     this.isExperienceModalOpen = false;
     this.isDeleteExperienceModalOpen = false;
     this.isCancelClassModalOpen = false;
+    this.isAdminUserModalOpen = false;
     this.reservationNoticeMessage = '';
     this.pendingHourNoticeMessage = '';
     this.showLowBonusAfterReservation = false;
@@ -1901,6 +2008,7 @@ export class AppComponent {
     this.passwordError = '';
     this.passwordNotice = '';
     this.passwordForm = this.blankPasswordForm();
+    this.adminUserError = '';
     this.deletingExperience = null;
     this.cancellingScheduleGroup = null;
   }
@@ -2438,6 +2546,18 @@ export class AppComponent {
       priceCents: 10000,
       currency: 'eur',
       active: true
+    };
+  }
+
+  private blankAdminUserForm(): AdminUserForm {
+    return {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      password: '',
+      role: 'USER',
+      sessions: 0
     };
   }
 

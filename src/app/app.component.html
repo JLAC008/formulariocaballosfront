@@ -13,7 +13,7 @@
     </div>
 
     <div class="site-menu-wrap">
-      <button class="site-menu-button" type="button" aria-label="Abrir opciones" [attr.aria-expanded]="isAccountMenuOpen" (click)="handleAccountMenuButtonClick()">
+      <button class="site-menu-button" type="button" [class.login-menu-button]="isGuest" aria-label="Abrir opciones" [attr.aria-expanded]="isAccountMenuOpen" (click)="handleAccountMenuButtonClick()">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20 21a8 8 0 0 0-16 0" />
           <circle cx="12" cy="7" r="4" />
@@ -212,7 +212,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" *ngIf="isMissingExperienceModalOpen" (click)="closeMissingExperienceModal()">
+    <div class="modal-backdrop" *ngIf="isMissingExperienceModalOpen">
       <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="missing-experience-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeMissingExperienceModal()">x</button>
         <p class="eyebrow modal-eyebrow">Reserva pendiente</p>
@@ -222,7 +222,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" *ngIf="isReservationModalOpen" (click)="closeReservationModal()">
+    <div class="modal-backdrop" *ngIf="isReservationModalOpen">
       <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="reservation-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeReservationModal()">x</button>
         <p class="eyebrow modal-eyebrow">Reserva confirmada</p>
@@ -267,7 +267,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" *ngIf="isLowBonusModalOpen" (click)="closeLowBonusModal()">
+    <div class="modal-backdrop" *ngIf="isLowBonusModalOpen">
       <section class="bonus-modal low-bonus-modal" role="dialog" aria-modal="true" aria-labelledby="low-bonus-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeLowBonusModal()">x</button>
         <p class="eyebrow modal-eyebrow">Sesiones disponibles</p>
@@ -278,7 +278,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" *ngIf="isHistoryModalOpen" (click)="closeHistoryModal()">
+    <div class="modal-backdrop" *ngIf="isHistoryModalOpen">
       <section class="history-modal" role="dialog" aria-modal="true" aria-labelledby="history-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeHistoryModal()">x</button>
         <p class="eyebrow modal-eyebrow">Mis proximas reservas</p>
@@ -580,6 +580,12 @@
         </div>
       </div>
 
+      <p class="confirmation" *ngIf="adminUserNotice">{{ adminUserNotice }}</p>
+
+      <div class="table-top-actions">
+        <button class="pay-button compact-action" type="button" (click)="openAdminUserModal()">Crear usuario</button>
+      </div>
+
       <div class="user-filter-grid">
         <label>
           Nombre
@@ -655,7 +661,7 @@
       </div>
     </section>
 
-    <div class="modal-backdrop" *ngIf="isExperienceModalOpen" (click)="closeExperienceModal()">
+    <div class="modal-backdrop" *ngIf="isExperienceModalOpen">
       <section class="experience-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeExperienceModal()">x</button>
         <p class="eyebrow">{{ editingExperience ? 'Editar experiencia' : 'Nueva experiencia' }}</p>
@@ -811,7 +817,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" *ngIf="isDeleteExperienceModalOpen" (click)="closeDeleteExperienceModal()">
+    <div class="modal-backdrop" *ngIf="isDeleteExperienceModalOpen">
       <section class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeDeleteExperienceModal()">x</button>
         <p class="eyebrow modal-eyebrow">Eliminar experiencia</p>
@@ -830,7 +836,7 @@
       </section>
     </div>
 
-    <div class="modal-backdrop" *ngIf="isCancelClassModalOpen" (click)="closeCancelClassModal()">
+    <div class="modal-backdrop" *ngIf="isCancelClassModalOpen">
       <section class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-class-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeCancelClassModal()">x</button>
         <p class="eyebrow modal-eyebrow">Cancelar experiencia</p>
@@ -843,6 +849,54 @@
           <button class="history-action" type="button" (click)="closeCancelClassModal()">Volver</button>
           <button class="history-action danger-action" type="button" (click)="confirmCancelClass()">Confirmar cancelación</button>
         </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isAdminUserModalOpen">
+      <section class="delete-modal admin-user-modal" role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeAdminUserModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Nuevo usuario</p>
+        <h2 id="admin-user-modal-title">Crear usuario</h2>
+        <form class="admin-user-form modal-user-form" (ngSubmit)="createAdminManagedUser()">
+          <label>
+            Nombre
+            <input type="text" name="adminUserFirstName" [(ngModel)]="adminUserForm.firstName" required>
+          </label>
+          <label>
+            Apellidos
+            <input type="text" name="adminUserLastName" [(ngModel)]="adminUserForm.lastName" required>
+          </label>
+          <label>
+            Teléfono
+            <input type="tel" name="adminUserPhone" [(ngModel)]="adminUserForm.phone" required>
+          </label>
+          <label>
+            Email
+            <input type="email" name="adminUserEmail" [(ngModel)]="adminUserForm.email" required>
+          </label>
+          <label>
+            Contraseña
+            <input type="password" name="adminUserPassword" [(ngModel)]="adminUserForm.password" required>
+          </label>
+          <label>
+            Rol
+            <select name="adminUserRole" [(ngModel)]="adminUserForm.role" required>
+              <option value="USER">Cliente</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+          </label>
+          <label>
+            Sesiones iniciales
+            <input type="number" name="adminUserSessions" [(ngModel)]="adminUserForm.sessions" min="0" step="1">
+          </label>
+          <div class="delete-modal-actions modal-form-actions">
+            <button class="history-action" type="button" (click)="closeAdminUserModal()">Cancelar</button>
+            <button class="pay-button" type="submit" [disabled]="adminUserInProgress">
+              {{ adminUserInProgress ? 'Creando...' : 'Crear usuario' }}
+            </button>
+          </div>
+        </form>
+        <p class="warning" *ngIf="adminUserError">{{ adminUserError }}</p>
       </section>
     </div>
 

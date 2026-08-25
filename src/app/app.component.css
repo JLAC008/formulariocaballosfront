@@ -1152,7 +1152,7 @@ dd {
     width: 44px;
   }
 
-  .site-menu-button:has(.site-menu-button-text) {
+  .site-menu-button.login-menu-button {
     background: #0f0f0f;
     color: #fff;
     display: inline-flex;
@@ -1166,7 +1166,7 @@ dd {
     width: auto;
   }
 
-  .site-menu-button:has(.site-menu-button-text) svg {
+  .site-menu-button.login-menu-button svg {
     display: none;
   }
 
@@ -1471,6 +1471,53 @@ dd {
   font: inherit;
   min-height: 40px;
   padding: 9px 11px;
+}
+
+.admin-user-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-user-form label {
+  color: #5f4a3d;
+  display: grid;
+  font-size: 13px;
+  gap: 7px;
+}
+
+.admin-user-form input,
+.admin-user-form select {
+  background: rgba(255, 252, 247, 0.88);
+  border: 1px solid var(--line);
+  color: #2f261f;
+  font: inherit;
+  min-height: 40px;
+  padding: 9px 11px;
+}
+
+.admin-user-form .pay-button {
+  align-self: end;
+  min-height: 40px;
+}
+
+.table-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 14px;
+}
+
+.admin-user-modal {
+  max-width: 720px;
+}
+
+.modal-user-form {
+  margin-top: 18px;
+}
+
+.modal-form-actions {
+  grid-column: 1 / -1;
+  margin-top: 4px;
 }
 
 .compact-action {
@@ -2012,6 +2059,10 @@ dd {
     grid-template-columns: 1fr;
   }
 
+  .admin-user-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .admin-kpis,
   .stats-grid {
     grid-template-columns: 1fr 1fr;
@@ -2050,6 +2101,7 @@ dd {
 @media (max-width: 560px) {
   .admin-kpis,
   .stats-grid,
+  .admin-user-form,
   .bonus-pack-admin-form,
   .bonus-pack-admin-card,
   .schedule-slot {
