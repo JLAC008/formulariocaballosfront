@@ -246,8 +246,8 @@ export class AppComponent {
   bonusPackForm: BonusPack = this.blankBonusPack();
   editingBonusPack: BonusPack | null = null;
   bonusPackError = '';
-  userBonusAdjustments: Record<number, number> = {};
   adminUserForm: AdminUserForm = this.blankAdminUserForm();
+  editingAdminUser: CustomerUser | null = null;
   adminUserError = '';
   adminUserNotice = '';
   adminUserInProgress = false;
@@ -1736,7 +1736,25 @@ export class AppComponent {
 
   openAdminUserModal(): void {
     this.closeAllModals();
+    this.editingAdminUser = null;
     this.adminUserForm = this.blankAdminUserForm();
+    this.adminUserError = '';
+    this.adminUserNotice = '';
+    this.isAdminUserModalOpen = true;
+  }
+
+  openEditAdminUserModal(user: CustomerUser): void {
+    this.closeAllModals();
+    this.editingAdminUser = user;
+    this.adminUserForm = {
+      firstName: user.firstName || user.name.split(' ')[0] || '',
+      lastName: user.lastName || user.name.split(' ').slice(1).join(' '),
+      phone: user.phone || '',
+      email: user.email || '',
+      password: '',
+      role: user.role === 'ADMIN' ? 'ADMIN' : 'USER',
+      sessions: Math.max(0, Number(user.bonuses || 0))
+    };
     this.adminUserError = '';
     this.adminUserNotice = '';
     this.isAdminUserModalOpen = true;
@@ -1745,6 +1763,7 @@ export class AppComponent {
   closeAdminUserModal(): void {
     this.isAdminUserModalOpen = false;
     this.adminUserForm = this.blankAdminUserForm();
+    this.editingAdminUser = null;
     this.adminUserError = '';
     this.adminUserInProgress = false;
   }
@@ -1775,21 +1794,27 @@ export class AppComponent {
       return;
     }
 
-    if (!PASSWORD_PATTERN.test(password)) {
+    if (!this.editingAdminUser && !PASSWORD_PATTERN.test(password)) {
       this.adminUserError = 'La contraseña debe tener 8 caracteres, mayúscula, minúscula y número.';
+      return;
+    }
+
+    if (this.editingAdminUser && password && !PASSWORD_PATTERN.test(password)) {
+      this.adminUserError = 'La nueva contraseña debe tener 8 caracteres, mayúscula, minúscula y número.';
       return;
     }
 
     const token = this.getAuthToken();
     if (!token) {
-      this.adminUserError = 'Inicia sesión como administrador para crear usuarios.';
+      this.adminUserError = 'Inicia sesión como administrador para gestionar usuarios.';
       return;
     }
 
+    const isEditing = !!this.editingAdminUser;
     this.adminUserInProgress = true;
     try {
-      const response = await fetch(`${API_URL}/admin/users`, {
-        method: 'POST',
+      const response = await fetch(isEditing ? `${API_URL}/admin/users/${this.editingAdminUser!.id}` : `${API_URL}/admin/users`, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
@@ -1801,22 +1826,26 @@ export class AppComponent {
           email,
           password,
           role: this.adminUserForm.role,
-          sessions
+          sessions,
+          active: true
         })
       });
 
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         const error = await response.json().catch(() => null);
-        this.adminUserError = error?.error || 'No se pudo crear el usuario.';
+        this.adminUserError = error?.error || (isEditing ? 'No se pudo actualizar el usuario.' : 'No se pudo crear el usuario.');
         return;
       }
 
-      const created = this.toCustomerUser(await response.json());
-      this.users = [created, ...this.users.filter((user) => user.id !== created.id)];
+      const saved = this.toCustomerUser(await response.json());
+      this.users = isEditing
+        ? this.users.map((user) => user.id === saved.id ? saved : user)
+        : [saved, ...this.users.filter((user) => user.id !== saved.id)];
       this.persistUsers();
       this.adminUserForm = this.blankAdminUserForm();
-      this.adminUserNotice = 'Usuario creado correctamente.';
+      this.editingAdminUser = null;
+      this.adminUserNotice = isEditing ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.';
       this.isAdminUserModalOpen = false;
     } catch {
       this.adminUserError = 'No se pudo conectar con el servidor.';
@@ -1869,24 +1898,6 @@ export class AppComponent {
       && booking.hour === group.hour
       && this.isSameBookingClass(booking, referenceBooking)
     );
-  }
-
-  adjustUserBonuses(userId: number, delta: number): void {
-    this.users = this.users.map((user) => user.id === userId
-      ? { ...user, bonuses: Math.max(0, user.bonuses + delta) }
-      : user);
-    this.persistUsers();
-    void this.syncAdminState();
-  }
-
-  applyUserBonusAdjustment(userId: number, direction: 1 | -1): void {
-    const amount = Math.max(0, Number(this.userBonusAdjustments[userId]) || 0);
-    if (amount === 0) {
-      return;
-    }
-
-    this.adjustUserBonuses(userId, amount * direction);
-    this.userBonusAdjustments[userId] = 0;
   }
 
   private setCurrentUser(user: CustomerUser): void {
@@ -2000,6 +2011,7 @@ export class AppComponent {
     this.isDeleteExperienceModalOpen = false;
     this.isCancelClassModalOpen = false;
     this.isAdminUserModalOpen = false;
+    this.editingAdminUser = null;
     this.reservationNoticeMessage = '';
     this.pendingHourNoticeMessage = '';
     this.showLowBonusAfterReservation = false;

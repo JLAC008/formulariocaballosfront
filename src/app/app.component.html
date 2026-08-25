@@ -608,9 +608,9 @@
               <th>Cliente</th>
               <th>Contacto</th>
               <th>Sesiones</th>
-              <th>Ajustar sesiones</th>
               <th>Reservas</th>
               <th>Alta</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -621,15 +621,11 @@
               </td>
               <td>{{ user.phone }}</td>
               <td><strong>{{ user.bonuses }}</strong></td>
-              <td>
-                <div class="bonus-admin-actions">
-                  <input type="number" min="0" step="1" [(ngModel)]="userBonusAdjustments[user.id]" placeholder="Sesiones">
-                  <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, 1)">Añadir</button>
-                  <button type="button" class="history-action" (click)="applyUserBonusAdjustment(user.id, -1)" [disabled]="user.bonuses === 0">Quitar</button>
-                </div>
-              </td>
               <td>{{ getUserReservationsCount(user.id) }}</td>
               <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <button type="button" class="history-action" (click)="openEditAdminUserModal(user)">Editar</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -855,8 +851,8 @@
     <div class="modal-backdrop" *ngIf="isAdminUserModalOpen">
       <section class="delete-modal admin-user-modal" role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeAdminUserModal()">x</button>
-        <p class="eyebrow modal-eyebrow">Nuevo usuario</p>
-        <h2 id="admin-user-modal-title">Crear usuario</h2>
+        <p class="eyebrow modal-eyebrow">{{ editingAdminUser ? 'Editar usuario' : 'Nuevo usuario' }}</p>
+        <h2 id="admin-user-modal-title">{{ editingAdminUser ? 'Editar usuario' : 'Crear usuario' }}</h2>
         <form class="admin-user-form modal-user-form" (ngSubmit)="createAdminManagedUser()">
           <label>
             Nombre
@@ -874,9 +870,10 @@
             Email
             <input type="email" name="adminUserEmail" [(ngModel)]="adminUserForm.email" required>
           </label>
-          <label>
-            Contraseña
-            <input type="password" name="adminUserPassword" [(ngModel)]="adminUserForm.password" required>
+          <label class="admin-user-password-field">
+            {{ editingAdminUser ? 'Nueva contraseña' : 'Contraseña' }}
+            <input type="password" name="adminUserPassword" [(ngModel)]="adminUserForm.password" [required]="!editingAdminUser">
+            <span class="field-help" *ngIf="editingAdminUser">Déjala vacía para conservar la contraseña actual.</span>
           </label>
           <label>
             Rol
@@ -886,13 +883,13 @@
             </select>
           </label>
           <label>
-            Sesiones iniciales
+            {{ editingAdminUser ? 'Sesiones' : 'Sesiones iniciales' }}
             <input type="number" name="adminUserSessions" [(ngModel)]="adminUserForm.sessions" min="0" step="1">
           </label>
           <div class="delete-modal-actions modal-form-actions">
             <button class="history-action" type="button" (click)="closeAdminUserModal()">Cancelar</button>
             <button class="pay-button" type="submit" [disabled]="adminUserInProgress">
-              {{ adminUserInProgress ? 'Creando...' : 'Crear usuario' }}
+              {{ adminUserInProgress ? (editingAdminUser ? 'Guardando...' : 'Creando...') : (editingAdminUser ? 'Guardar cambios' : 'Crear usuario') }}
             </button>
           </div>
         </form>
