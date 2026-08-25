@@ -13,11 +13,12 @@
     </div>
 
     <div class="site-menu-wrap">
-      <button class="site-menu-button" type="button" aria-label="Abrir opciones" [attr.aria-expanded]="isAccountMenuOpen" (click)="toggleAccountMenu()">
+      <button class="site-menu-button" type="button" aria-label="Abrir opciones" [attr.aria-expanded]="isAccountMenuOpen" (click)="handleAccountMenuButtonClick()">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20 21a8 8 0 0 0-16 0" />
           <circle cx="12" cy="7" r="4" />
         </svg>
+        <span class="site-menu-button-text" *ngIf="isGuest">Iniciar sesión</span>
       </button>
       <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
         <ng-container *ngIf="isCustomer">
@@ -187,7 +188,7 @@
         <button class="pay-button" type="button" (click)="reserve()">
           {{ actionLabel }}
         </button>
-        <button class="buy-button" type="button" (click)="openBonusModal()">Comprar más sesiones</button>
+        <button class="buy-button" type="button" (click)="openBonusModal()">Comprar un bono</button>
         <p class="secure">{{ actionHelpText }}</p>
         <p class="warning" *ngIf="warning">{{ warning }}</p>
         <p class="confirmation" *ngIf="confirmation">{{ confirmation }}</p>

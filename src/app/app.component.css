@@ -102,6 +102,10 @@
   width: 23px;
 }
 
+.site-menu-button-text {
+  display: none;
+}
+
 .site-menu-panel {
   background: #fff;
   border: 1px solid #e3ddd4;
@@ -1129,6 +1133,10 @@ dd {
 }
 
 @media (max-width: 760px) {
+  .site-menu-wrap {
+    right: 20px;
+  }
+
   .site-navbar-inner {
     gap: 12px;
     min-height: 70px;
@@ -1138,6 +1146,28 @@ dd {
   .site-brand img {
     height: 36px;
     width: 44px;
+  }
+
+  .site-menu-button:has(.site-menu-button-text) {
+    background: #0f0f0f;
+    color: #fff;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 700;
+    height: 40px;
+    letter-spacing: 0.8px;
+    min-width: 132px;
+    padding: 0 14px;
+    text-transform: uppercase;
+    width: auto;
+  }
+
+  .site-menu-button:has(.site-menu-button-text) svg {
+    display: none;
+  }
+
+  .site-menu-button-text {
+    display: inline;
   }
 
   .hero {

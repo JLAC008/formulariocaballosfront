@@ -929,6 +929,15 @@ export class AppComponent {
     this.isAccountMenuOpen = !this.isAccountMenuOpen;
   }
 
+  handleAccountMenuButtonClick(): void {
+    if (this.isGuest && window.matchMedia('(max-width: 760px)').matches) {
+      this.showLogin('login');
+      return;
+    }
+
+    this.toggleAccountMenu();
+  }
+
   closeAccountMenu(): void {
     this.isAccountMenuOpen = false;
   }
