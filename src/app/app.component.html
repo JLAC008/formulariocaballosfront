@@ -251,6 +251,22 @@
       </section>
     </div>
 
+    <div class="modal-backdrop" *ngIf="isHourNoticeModalOpen">
+      <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="hour-notice-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeHourNoticeModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Información importante</p>
+        <h2 id="hour-notice-modal-title">Antes de reservar</h2>
+        <div class="reservation-notice">
+          <strong>Información de la reserva</strong>
+          <p>{{ pendingHourNoticeMessage }}</p>
+        </div>
+        <div class="delete-modal-actions">
+          <button class="history-action" type="button" (click)="closeHourNoticeModal()">Cancelar</button>
+          <button class="pay-button" type="button" (click)="confirmHourNoticeAndReserve()">Aceptar</button>
+        </div>
+      </section>
+    </div>
+
     <div class="modal-backdrop" *ngIf="isLowBonusModalOpen" (click)="closeLowBonusModal()">
       <section class="bonus-modal low-bonus-modal" role="dialog" aria-modal="true" aria-labelledby="low-bonus-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeLowBonusModal()">x</button>

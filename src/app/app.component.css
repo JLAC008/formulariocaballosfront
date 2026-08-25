@@ -945,6 +945,10 @@ dd {
   margin: 0;
 }
 
+.hour-notice {
+  margin: 14px 0 10px;
+}
+
 .modal-action {
   margin-top: 4px;
 }

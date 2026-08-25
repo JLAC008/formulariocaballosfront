@@ -185,6 +185,7 @@ export class AppComponent {
   isBonusModalOpen = false;
   isMissingExperienceModalOpen = false;
   isReservationModalOpen = false;
+  isHourNoticeModalOpen = false;
   isLowBonusModalOpen = false;
   isHistoryModalOpen = false;
   isProfileModalOpen = false;
@@ -194,6 +195,7 @@ export class AppComponent {
   isAccountMenuOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
+  pendingHourNoticeMessage = '';
   showLowBonusAfterReservation = false;
   customerName = this.currentUser?.name || 'Paco Martinez';
   phone = this.currentUser?.phone || '633 443 322';
@@ -428,6 +430,10 @@ export class AppComponent {
 
   get isSelectedSlotPast(): boolean {
     return this.isSlotPast(this.toDateKey(this.selectedDate), this.selectedHour);
+  }
+
+  get selectedHourNotice(): string {
+    return this.getSelectedHourMessage();
   }
 
   get visibleHistory(): BookingHistoryItem[] {
@@ -986,7 +992,7 @@ export class AppComponent {
     this.visibleMonth = nextMonth;
   }
 
-  async reserve(): Promise<void> {
+  async reserve(skipHourNotice = false): Promise<void> {
     const selectedCount = this.selectedExperiences.length;
 
     if (selectedCount === 0) {
@@ -1035,6 +1041,16 @@ export class AppComponent {
 
     if (this.isSelectedSlotFull) {
       this.warning = 'Esta hora ya tiene el aforo completo. Elige otra hora disponible.';
+      this.confirmation = '';
+      return;
+    }
+
+    const hourNotice = this.getSelectedHourMessage();
+    if (hourNotice && !skipHourNotice) {
+      this.closeAllModals();
+      this.pendingHourNoticeMessage = hourNotice;
+      this.isHourNoticeModalOpen = true;
+      this.warning = '';
       this.confirmation = '';
       return;
     }
@@ -1090,7 +1106,7 @@ export class AppComponent {
     }
 
     this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} sesión${this.lessonBonuses === 1 ? '' : 'es'}.`;
-    this.reservationNoticeMessage = this.getSelectedHourMessage();
+    this.reservationNoticeMessage = '';
     this.closeAllModals();
     this.showLowBonusAfterReservation = this.lessonBonuses === 1;
     this.isReservationModalOpen = true;
@@ -1141,6 +1157,17 @@ export class AppComponent {
       this.showLowBonusAfterReservation = false;
       this.isLowBonusModalOpen = true;
     }
+  }
+
+  closeHourNoticeModal(): void {
+    this.isHourNoticeModalOpen = false;
+    this.pendingHourNoticeMessage = '';
+  }
+
+  confirmHourNoticeAndReserve(): void {
+    this.isHourNoticeModalOpen = false;
+    this.pendingHourNoticeMessage = '';
+    void this.reserve(true);
   }
 
   openHistoryModal(): void {
@@ -1859,6 +1886,7 @@ export class AppComponent {
     this.isBonusModalOpen = false;
     this.isMissingExperienceModalOpen = false;
     this.isReservationModalOpen = false;
+    this.isHourNoticeModalOpen = false;
     this.isLowBonusModalOpen = false;
     this.isHistoryModalOpen = false;
     this.isProfileModalOpen = false;
@@ -1866,6 +1894,7 @@ export class AppComponent {
     this.isDeleteExperienceModalOpen = false;
     this.isCancelClassModalOpen = false;
     this.reservationNoticeMessage = '';
+    this.pendingHourNoticeMessage = '';
     this.showLowBonusAfterReservation = false;
     this.profileError = '';
     this.profileNotice = '';
