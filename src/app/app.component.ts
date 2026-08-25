@@ -909,10 +909,12 @@ export class AppComponent {
       }
       const auth = await response.json().catch(() => null);
       this.authError = '';
-      this.authNotice = auth?.verificationResent
+      this.authNotice = auth?.user?.emailVerified
+        ? 'Cuenta creada correctamente. Ya puedes iniciar sesión.'
+        : auth?.verificationResent
         ? 'La cuenta ya estaba pendiente de verificación. Te hemos enviado un nuevo correo.'
         : 'Te hemos enviado un correo para confirmar tu cuenta. Revisa tu bandeja de entrada.';
-      this.verificationEmailSentTo = email;
+      this.verificationEmailSentTo = auth?.user?.emailVerified ? '' : email;
       this.loginPassword = '';
     } catch {
       this.authError = 'No se pudo conectar con el servidor.';
