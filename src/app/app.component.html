@@ -255,13 +255,32 @@
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeHourNoticeModal()">x</button>
         <p class="eyebrow modal-eyebrow">Información importante</p>
         <h2 id="hour-notice-modal-title">Antes de reservar</h2>
-        <div class="reservation-notice">
+        <p class="modal-copy" *ngIf="!pendingHourNoticeMessage">
+          Confirma que quieres reservar esta experiencia en la fecha y hora seleccionadas.
+        </p>
+        <dl class="reservation-details" *ngIf="!pendingHourNoticeMessage">
+          <div>
+            <dt>{{ summarySelectionLabel }}</dt>
+            <dd>
+              <span class="selection-line" *ngFor="let experience of selectedExperiences">{{ experience.title }}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Fecha</dt>
+            <dd>{{ formattedDate }}</dd>
+          </div>
+          <div>
+            <dt>Hora</dt>
+            <dd>{{ selectedHour }}</dd>
+          </div>
+        </dl>
+        <div class="reservation-notice" *ngIf="pendingHourNoticeMessage">
           <strong>Información de la reserva</strong>
           <p class="rich-notice-text" [innerHTML]="formatNoticeText(pendingHourNoticeMessage)"></p>
         </div>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeHourNoticeModal()">Cancelar</button>
-          <button class="pay-button" type="button" (click)="confirmHourNoticeAndReserve()">Aceptar</button>
+          <button class="pay-button" type="button" (click)="confirmHourNoticeAndReserve()">Confirmar reserva</button>
         </div>
       </section>
     </div>

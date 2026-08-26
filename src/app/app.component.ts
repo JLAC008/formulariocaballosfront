@@ -1077,8 +1077,8 @@ export class AppComponent {
       return;
     }
 
-    const hourNotice = this.getSelectedHourMessage();
-    if (hourNotice && !skipHourNotice) {
+    if (!skipHourNotice) {
+      const hourNotice = this.getSelectedHourMessage();
       this.closeAllModals();
       this.pendingHourNoticeMessage = hourNotice;
       this.isHourNoticeModalOpen = true;
