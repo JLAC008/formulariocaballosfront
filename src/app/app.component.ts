@@ -14,9 +14,9 @@ interface Experience {
   type: BookingType;
   title: string;
   description: string;
-  level: string;
   duration: string;
   price: number;
+  capacity: number;
   image: string;
   active: boolean;
   fridayAvailable: boolean;
@@ -139,8 +139,6 @@ const CUSTOMER_SESSION_KEY = 'centro_ecuestre_customer_session';
 const USERS_KEY = 'centro_ecuestre_users';
 const BOOKINGS_KEY = 'centro_ecuestre_bookings';
 const EXPERIENCES_KEY = 'centro_ecuestre_experiences';
-const LESSON_CAPACITY = 5;
-const ROUTE_CAPACITY = 8;
 const API_URL = environment.apiUrl;
 const API_BASE_URL = API_URL.replace(/\/api\/?$/, '');
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -196,6 +194,7 @@ export class AppComponent {
   isMissingExperienceModalOpen = false;
   isReservationModalOpen = false;
   isHourNoticeModalOpen = false;
+  isFullCapacityModalOpen = false;
   isLowBonusModalOpen = false;
   isHistoryModalOpen = false;
   isProfileModalOpen = false;
@@ -516,8 +515,11 @@ export class AppComponent {
   }
 
   getAdminScheduleGroupCapacity(group: AdminScheduleGroup): number {
-    const type = group.bookings[0]?.type;
-    return type === 'routes' ? ROUTE_CAPACITY : LESSON_CAPACITY;
+    const booking = group.bookings[0];
+    const experience = booking?.experienceId
+      ? this.experiences.find((item) => item.id === booking.experienceId)
+      : this.experiences.find((item) => item.title === booking?.title);
+    return this.getExperienceCapacity(experience || null, booking?.type);
   }
 
   get activeExperiencesCount(): number {
@@ -1057,7 +1059,7 @@ export class AppComponent {
     }
 
     if (this.isSelectedSlotFull) {
-      this.warning = 'Esta hora ya tiene el aforo completo. Elige otra hora disponible.';
+      this.openFullCapacityModal();
       this.confirmation = '';
       return;
     }
@@ -1094,6 +1096,11 @@ export class AppComponent {
     if (this.handleExpiredSession(response)) return;
     if (!response.ok) {
       const error = await response.json().catch(() => null);
+      if (this.isFullCapacityError(error?.error)) {
+        this.openFullCapacityModal();
+        this.confirmation = '';
+        return;
+      }
       this.warning = error?.error || 'No se pudo crear la reserva.';
       this.confirmation = '';
       return;
@@ -1179,6 +1186,16 @@ export class AppComponent {
   closeHourNoticeModal(): void {
     this.isHourNoticeModalOpen = false;
     this.pendingHourNoticeMessage = '';
+  }
+
+  openFullCapacityModal(): void {
+    this.closeAllModals();
+    this.isFullCapacityModalOpen = true;
+    this.warning = '';
+  }
+
+  closeFullCapacityModal(): void {
+    this.isFullCapacityModalOpen = false;
   }
 
   confirmHourNoticeAndReserve(): void {
@@ -1544,6 +1561,18 @@ export class AppComponent {
     this.imageUploadInProgress = false;
   }
 
+  onExperienceTypeChange(type: BookingType): void {
+    if (this.editingExperience) {
+      return;
+    }
+
+    this.experienceForm = {
+      ...this.experienceForm,
+      type,
+      capacity: type === 'routes' ? 8 : 5
+    };
+  }
+
   async uploadExperienceImage(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -1595,6 +1624,7 @@ export class AppComponent {
       ...this.experienceForm,
       type: this.toBookingType(this.experienceForm.type),
       price: this.normalizeBonusCost(this.experienceForm.price),
+      capacity: this.normalizeExperienceCapacity(this.experienceForm.capacity, this.experienceForm.type),
       hours: this.sanitizeExperienceHours(this.experienceForm.hours),
       fridayHours: this.sanitizeOptionalExperienceHours(this.experienceForm.fridayHours),
       hourMessages: this.sanitizeHourMessages(this.experienceForm.hourMessages, this.experienceForm.hours)
@@ -1886,6 +1916,12 @@ export class AppComponent {
     return Number.isFinite(cost) && cost > 0 && cost <= 10 ? cost : 1;
   }
 
+  private normalizeExperienceCapacity(value: unknown, type?: BookingType): number {
+    const fallback = type === 'routes' ? 8 : 5;
+    const capacity = Math.floor(Number(value));
+    return Number.isFinite(capacity) && capacity >= 1 && capacity <= 50 ? capacity : fallback;
+  }
+
   private getCancellableScheduleGroupBookings(): BookingHistoryItem[] {
     const group = this.cancellingScheduleGroup;
     const referenceBooking = group?.bookings[0];
@@ -2006,6 +2042,7 @@ export class AppComponent {
     this.isMissingExperienceModalOpen = false;
     this.isReservationModalOpen = false;
     this.isHourNoticeModalOpen = false;
+    this.isFullCapacityModalOpen = false;
     this.isLowBonusModalOpen = false;
     this.isHistoryModalOpen = false;
     this.isProfileModalOpen = false;
@@ -2025,6 +2062,10 @@ export class AppComponent {
     this.adminUserError = '';
     this.deletingExperience = null;
     this.cancellingScheduleGroup = null;
+  }
+
+  private isFullCapacityError(message: unknown): boolean {
+    return typeof message === 'string' && this.normalizeSearch(message).includes('aforo completo');
   }
 
   private getInitialView(): AppView {
@@ -2142,9 +2183,9 @@ export class AppComponent {
       type: this.toBookingType(item.type),
       title: item.title || 'Experiencia',
       description: item.description || '',
-      level: item.level || '',
       duration: item.duration || '',
       price: this.normalizeBonusCost(item.price),
+      capacity: this.normalizeExperienceCapacity(item.capacity, this.toBookingType(item.type)),
       image: item.image || 'assets/route-sendero.jpg',
       active: item.active !== false,
       fridayAvailable: item.fridayAvailable === true,
@@ -2413,8 +2454,8 @@ export class AppComponent {
     return this.getSlotBookingsCount(experience, dateKey, hour) >= this.getExperienceCapacity(experience);
   }
 
-  private getExperienceCapacity(experience: Experience): number {
-    return experience.type === 'routes' ? ROUTE_CAPACITY : LESSON_CAPACITY;
+  getExperienceCapacity(experience: Experience | null, fallbackType?: BookingType): number {
+    return this.normalizeExperienceCapacity(experience?.capacity, experience?.type || fallbackType);
   }
 
   private getSlotBookingsCount(experience: Experience, dateKey: string, hour: string): number {
@@ -2539,9 +2580,9 @@ export class AppComponent {
       type: 'lessons',
       title: '',
       description: '',
-      level: 'Principiante',
       duration: '60 min',
       price: 1,
+      capacity: 5,
       image: 'assets/route-sendero.jpg',
       active: true,
       fridayAvailable: false,
@@ -2599,9 +2640,9 @@ export class AppComponent {
         type: 'lessons',
         title: 'Clase de Iniciación',
         description: 'Sesión guiada en pista para aprender postura, control básico y seguridad desde cero.',
-        level: 'Principiante',
         duration: '60 min',
         price: 1,
+        capacity: 5,
         image: 'assets/route-sendero.jpg',
         active: true,
         fridayAvailable: false,
@@ -2614,9 +2655,9 @@ export class AppComponent {
         type: 'lessons',
         title: 'Clase Tecnica Privada',
         description: 'Trabajo personalizado para mejorar ayudas, asiento y confianza con seguimiento individual.',
-        level: 'Intermedio',
         duration: '75 min',
         price: 1,
+        capacity: 5,
         image: 'assets/route-crepusculo.jpg',
         active: true,
         fridayAvailable: false,

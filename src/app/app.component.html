@@ -80,7 +80,6 @@
             <h2>{{ experience.title }}</h2>
             <p>{{ experience.description }}</p>
             <div class="meta">
-              <span>{{ experience.level }}</span>
               <span>{{ experience.duration }}</span>
             </div>
           </div>
@@ -264,6 +263,16 @@
           <button class="history-action" type="button" (click)="closeHourNoticeModal()">Cancelar</button>
           <button class="pay-button" type="button" (click)="confirmHourNoticeAndReserve()">Aceptar</button>
         </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isFullCapacityModalOpen">
+      <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="full-capacity-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeFullCapacityModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Reserva no disponible</p>
+        <h2 id="full-capacity-modal-title">Aforo completo</h2>
+        <p class="modal-copy">No se ha podido reservar porque esta experiencia ya tiene el aforo completo en la hora seleccionada.</p>
+        <button class="pay-button modal-action" type="button" (click)="closeFullCapacityModal()">Aceptar</button>
       </section>
     </div>
 
@@ -508,8 +517,8 @@
             <h3>{{ experience.title }}</h3>
             <p>{{ experience.description }}</p>
             <div class="admin-card-meta">
-              <span>{{ experience.level }}</span>
               <span>{{ experience.duration }}</span>
+              <span>Aforo {{ getExperienceCapacity(experience) }}</span>
               <span>{{ experience.hours.join(', ') }}</span>
               <strong>{{ formatBonusCost(getExperienceBonusCost(experience)) }}</strong>
             </div>
@@ -665,7 +674,7 @@
         <form class="experience-form" (ngSubmit)="saveExperience()">
           <label>
             Tipo
-            <select name="experienceType" [(ngModel)]="experienceForm.type" required>
+            <select name="experienceType" [(ngModel)]="experienceForm.type" (ngModelChange)="onExperienceTypeChange($event)" required>
               <option *ngFor="let type of experienceTypes" [ngValue]="type.value">{{ type.label }}</option>
             </select>
           </label>
@@ -679,8 +688,8 @@
           </label>
           <div class="form-grid">
             <label>
-              Nivel
-              <input type="text" name="experienceLevel" [(ngModel)]="experienceForm.level">
+              Aforo
+              <input type="number" name="experienceCapacity" [(ngModel)]="experienceForm.capacity" min="1" max="50" step="1">
             </label>
             <label>
               Duración
