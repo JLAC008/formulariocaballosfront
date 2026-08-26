@@ -945,6 +945,19 @@ dd {
   margin: 0;
 }
 
+.reservation-notice .rich-notice-text {
+  white-space: normal;
+}
+
+.reservation-notice .rich-notice-text strong {
+  color: #2f261f;
+  display: inline;
+  font-size: inherit;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: none;
+}
+
 .hour-notice {
   margin: 14px 0 10px;
 }

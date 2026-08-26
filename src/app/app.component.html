@@ -257,7 +257,7 @@
         <h2 id="hour-notice-modal-title">Antes de reservar</h2>
         <div class="reservation-notice">
           <strong>Información de la reserva</strong>
-          <p>{{ pendingHourNoticeMessage }}</p>
+          <p class="rich-notice-text" [innerHTML]="formatNoticeText(pendingHourNoticeMessage)"></p>
         </div>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeHourNoticeModal()">Cancelar</button>
@@ -735,7 +735,6 @@
                   type="button"
                   class="history-action danger-action"
                   (click)="removeExperienceHour(hour)"
-                  [disabled]="editableExperienceSelectedHours.length === 1"
                 >
                   Quitar
                 </button>
@@ -765,7 +764,7 @@
                   [name]="'hourMessage' + hour"
                   [ngModel]="getExperienceHourMessage(hour)"
                   (ngModelChange)="setExperienceHourMessage(hour, $event)"
-                  placeholder="Ejemplo: Por la mañana adultos. Llegad media hora antes para preparar el equipo."
+                  placeholder="Ejemplo: **Por la mañana adultos**&#10;Llegad media hora antes para preparar el equipo."
                 ></textarea>
               </label>
             </div>

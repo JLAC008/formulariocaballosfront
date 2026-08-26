@@ -546,6 +546,19 @@ export class AppComponent {
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Sin datos';
   }
 
+  formatNoticeText(value: string): string {
+    const escaped = (value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    return escaped
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\r?\n/g, '<br>');
+  }
+
   get deletingExperienceReservationsCount(): number {
     return this.deletingExperience ? this.getExperienceReservationsCount(this.deletingExperience) : 0;
   }
@@ -2311,9 +2324,6 @@ export class AppComponent {
 
   toggleExperienceHour(hour: string): void {
     const currentHours = this.getExperienceFormHours();
-    if (currentHours.includes(hour) && currentHours.length === 1) {
-      return;
-    }
 
     this.experienceForm = {
       ...this.experienceForm,
@@ -2328,7 +2338,7 @@ export class AppComponent {
 
   removeExperienceHour(hour: string): void {
     const currentHours = this.getExperienceFormHours();
-    if (!currentHours.includes(hour) || currentHours.length === 1) {
+    if (!currentHours.includes(hour)) {
       return;
     }
 
@@ -2498,7 +2508,9 @@ export class AppComponent {
   }
 
   private getExperienceHours(experience: Experience): string[] {
-    return this.sanitizeExperienceHours(experience.hours);
+    return Array.isArray(experience.hours)
+      ? this.sanitizeOptionalExperienceHours(experience.hours)
+      : [...this.hours];
   }
 
   private getExperienceHoursForDate(experience: Experience, date: Date): string[] {
@@ -2510,8 +2522,7 @@ export class AppComponent {
   }
 
   private sanitizeExperienceHours(hours?: string[]): string[] {
-    const validHours = this.sortHours([...(hours || [])].filter((hour) => this.isValidHour(hour)));
-    return validHours.length > 0 ? validHours : [...this.hours];
+    return this.sanitizeOptionalExperienceHours(hours);
   }
 
   private sanitizeOptionalExperienceHours(hours?: string[]): string[] {
@@ -2519,7 +2530,7 @@ export class AppComponent {
   }
 
   private sanitizeHourMessages(messages?: Record<string, string>, hours?: string[]): Record<string, string> {
-    const validHours = new Set(this.sanitizeExperienceHours(hours));
+    const validHours = new Set(this.sanitizeOptionalExperienceHours(hours));
     return Object.fromEntries(
       Object.entries(messages || {})
         .map(([hour, message]) => [hour, message.trim()])
