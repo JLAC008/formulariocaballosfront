@@ -323,7 +323,33 @@
                 <small *ngIf="booking.status === 'CANCELLED'">Sesiones devueltas</small>
               </span>
             </div>
+            <button
+              class="history-action danger-action"
+              type="button"
+              *ngIf="canCancelCustomerBooking(booking)"
+              (click)="openCustomerCancelModal(booking)"
+            >
+              Cancelar reserva
+            </button>
+            <small class="history-limit" *ngIf="booking.status === 'CONFIRMED' && !canCancelCustomerBooking(booking)">
+              Ya no se puede cancelar online.
+            </small>
           </article>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isCustomerCancelModalOpen">
+      <section class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="customer-cancel-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeCustomerCancelModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Cancelar reserva</p>
+        <h2 id="customer-cancel-modal-title">{{ cancellingCustomerBooking?.title }}</h2>
+        <p class="modal-copy">
+          Si cancelas ahora, se devolverá la sesión a tu cuenta. Solo se pueden cancelar reservas cuando faltan más de 3 horas para el inicio.
+        </p>
+        <div class="delete-modal-actions">
+          <button class="history-action" type="button" (click)="closeCustomerCancelModal()">Mantener reserva</button>
+          <button class="history-action danger-action" type="button" (click)="confirmCustomerCancelBooking()">Cancelar reserva</button>
         </div>
       </section>
     </div>

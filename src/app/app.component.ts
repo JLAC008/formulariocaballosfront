@@ -198,6 +198,7 @@ export class AppComponent {
   isFullCapacityModalOpen = false;
   isLowBonusModalOpen = false;
   isHistoryModalOpen = false;
+  isCustomerCancelModalOpen = false;
   isProfileModalOpen = false;
   isExperienceModalOpen = false;
   isDeleteExperienceModalOpen = false;
@@ -207,6 +208,7 @@ export class AppComponent {
   reservationMessage = '';
   reservationNoticeMessage = '';
   pendingHourNoticeMessage = '';
+  cancellingCustomerBooking: BookingHistoryItem | null = null;
   showLowBonusAfterReservation = false;
   customerName = this.currentUser?.name || 'Paco Martinez';
   phone = this.currentUser?.phone || '633 443 322';
@@ -1234,6 +1236,59 @@ export class AppComponent {
     this.isHistoryModalOpen = false;
   }
 
+  canCancelCustomerBooking(booking: BookingHistoryItem): boolean {
+    return booking.status === 'CONFIRMED' && this.getBookingDateTime(booking).getTime() > Date.now() + 3 * 60 * 60 * 1000;
+  }
+
+  openCustomerCancelModal(booking: BookingHistoryItem): void {
+    this.cancellingCustomerBooking = booking;
+    this.isCustomerCancelModalOpen = true;
+    this.warning = '';
+  }
+
+  closeCustomerCancelModal(): void {
+    this.isCustomerCancelModalOpen = false;
+    this.cancellingCustomerBooking = null;
+  }
+
+  async confirmCustomerCancelBooking(): Promise<void> {
+    const booking = this.cancellingCustomerBooking;
+    const token = this.getAuthToken();
+    if (!booking || !token) {
+      this.closeCustomerCancelModal();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/bookings/${booking.id}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.warning = error?.error || 'No se pudo cancelar la reserva.';
+        this.closeCustomerCancelModal();
+        return;
+      }
+
+      const saved = await response.json();
+      const cancelled = this.toBookingHistoryItem(saved);
+      this.bookingHistory = this.bookingHistory.map((item) => item.id === cancelled.id ? { ...item, ...cancelled } : item);
+      this.persistBookings();
+      if (typeof saved.remainingBonuses === 'number') {
+        this.setCurrentUserBonuses(saved.remainingBonuses);
+      }
+      this.confirmation = 'Reserva cancelada. Se ha devuelto la sesión a tu cuenta.';
+      this.warning = '';
+      this.closeCustomerCancelModal();
+    } catch {
+      this.warning = 'No se pudo conectar con el servidor.';
+      this.closeCustomerCancelModal();
+    }
+  }
+
   openProfileModal(): void {
     if (!this.currentUser) {
       this.showLogin('login');
@@ -2061,6 +2116,7 @@ export class AppComponent {
     this.isFullCapacityModalOpen = false;
     this.isLowBonusModalOpen = false;
     this.isHistoryModalOpen = false;
+    this.isCustomerCancelModalOpen = false;
     this.isProfileModalOpen = false;
     this.isExperienceModalOpen = false;
     this.isDeleteExperienceModalOpen = false;
@@ -2069,6 +2125,7 @@ export class AppComponent {
     this.editingAdminUser = null;
     this.reservationNoticeMessage = '';
     this.pendingHourNoticeMessage = '';
+    this.cancellingCustomerBooking = null;
     this.showLowBonusAfterReservation = false;
     this.profileError = '';
     this.profileNotice = '';

@@ -1065,6 +1065,8 @@ dd {
 .history-item {
   background: rgba(255, 252, 247, 0.72);
   border: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
   margin-bottom: 9px;
   padding: 12px 14px 13px;
 }
@@ -1089,6 +1091,11 @@ dd {
   display: block;
   font-size: 11px;
   line-height: 1.45;
+}
+
+.history-limit {
+  color: #8b837a;
+  font-size: 11px;
 }
 
 .history-meta-line {
