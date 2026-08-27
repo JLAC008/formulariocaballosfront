@@ -21,6 +21,7 @@ interface Experience {
   active: boolean;
   fridayAvailable: boolean;
   fridayHours: string[];
+  fridayHourMessages?: Record<string, string>;
   hours: string[];
   hourMessages?: Record<string, string>;
 }
@@ -1556,6 +1557,7 @@ export class AppComponent {
           ...experience,
           hours: this.getExperienceHours(experience),
           fridayHours: this.getFridayExperienceHours(experience),
+          fridayHourMessages: this.sanitizeHourMessages(experience.fridayHourMessages, this.getFridayExperienceHours(experience)),
           hourMessages: this.sanitizeHourMessages(experience.hourMessages, this.getExperienceHours(experience))
         }
       : this.blankExperience();
@@ -1640,6 +1642,7 @@ export class AppComponent {
       capacity: this.normalizeExperienceCapacity(this.experienceForm.capacity, this.experienceForm.type),
       hours: this.sanitizeExperienceHours(this.experienceForm.hours),
       fridayHours: this.sanitizeOptionalExperienceHours(this.experienceForm.fridayHours),
+      fridayHourMessages: this.sanitizeHourMessages(this.experienceForm.fridayHourMessages, this.experienceForm.fridayHours),
       hourMessages: this.sanitizeHourMessages(this.experienceForm.hourMessages, this.experienceForm.hours)
     };
 
@@ -2203,6 +2206,7 @@ export class AppComponent {
       active: item.active !== false,
       fridayAvailable: item.fridayAvailable === true,
       fridayHours: Array.isArray(item.fridayHours) ? item.fridayHours : [],
+      fridayHourMessages: item.fridayHourMessages || {},
       hours: Array.isArray(item.hours) ? item.hours : this.hours,
       hourMessages: item.hourMessages || {}
     };
@@ -2211,6 +2215,7 @@ export class AppComponent {
       ...experience,
       hours: this.getExperienceHours(experience),
       fridayHours: this.getFridayExperienceHours(experience),
+      fridayHourMessages: this.sanitizeHourMessages(experience.fridayHourMessages, experience.fridayHours),
       hourMessages: this.sanitizeHourMessages(experience.hourMessages, experience.hours)
     };
   }
@@ -2359,7 +2364,10 @@ export class AppComponent {
       ...this.experienceForm,
       fridayHours: currentHours.includes(hour)
         ? currentHours.filter((selectedHour) => selectedHour !== hour)
-        : this.sortHours([...currentHours, hour])
+        : this.sortHours([...currentHours, hour]),
+      fridayHourMessages: currentHours.includes(hour)
+        ? this.removeFridayHourMessage(hour)
+        : { ...(this.experienceForm.fridayHourMessages || {}) }
     };
   }
 
@@ -2371,7 +2379,8 @@ export class AppComponent {
 
     this.experienceForm = {
       ...this.experienceForm,
-      fridayHours: currentHours.filter((selectedHour) => selectedHour !== hour)
+      fridayHours: currentHours.filter((selectedHour) => selectedHour !== hour),
+      fridayHourMessages: this.removeFridayHourMessage(hour)
     };
   }
 
@@ -2405,7 +2414,8 @@ export class AppComponent {
     this.customFridayHourError = '';
     this.experienceForm = {
       ...this.experienceForm,
-      fridayHours: this.sortHours([...this.getExperienceFormFridayHours(), hour])
+      fridayHours: this.sortHours([...this.getExperienceFormFridayHours(), hour]),
+      fridayHourMessages: { ...(this.experienceForm.fridayHourMessages || {}) }
     };
     this.customFridayHour = '';
   }
@@ -2441,6 +2451,20 @@ export class AppComponent {
       ...this.experienceForm,
       hourMessages: {
         ...(this.experienceForm.hourMessages || {}),
+        [hour]: message
+      }
+    };
+  }
+
+  getFridayHourMessage(hour: string): string {
+    return this.experienceForm.fridayHourMessages?.[hour] || '';
+  }
+
+  setFridayHourMessage(hour: string, message: string): void {
+    this.experienceForm = {
+      ...this.experienceForm,
+      fridayHourMessages: {
+        ...(this.experienceForm.fridayHourMessages || {}),
         [hour]: message
       }
     };
@@ -2551,8 +2575,17 @@ export class AppComponent {
     return messages;
   }
 
+  private removeFridayHourMessage(hour: string): Record<string, string> {
+    const { [hour]: removed, ...messages } = this.experienceForm.fridayHourMessages || {};
+    return messages;
+  }
+
   private getSelectedHourMessage(): string {
     const selectedExperience = this.selectedExperiences[0];
+    if (this.selectedDate.getDay() === 5) {
+      return selectedExperience?.fridayHourMessages?.[this.selectedHour]?.trim() || '';
+    }
+
     return selectedExperience?.hourMessages?.[this.selectedHour]?.trim() || '';
   }
 
@@ -2598,6 +2631,7 @@ export class AppComponent {
       active: true,
       fridayAvailable: false,
       fridayHours: [],
+      fridayHourMessages: {},
       hours: [...this.hours],
       hourMessages: {}
     };
@@ -2658,6 +2692,7 @@ export class AppComponent {
         active: true,
         fridayAvailable: false,
         fridayHours: [],
+        fridayHourMessages: {},
         hours: ['11:00', '18:00', '18:45', '19:30'],
         hourMessages: {}
       },
@@ -2673,6 +2708,7 @@ export class AppComponent {
         active: true,
         fridayAvailable: false,
         fridayHours: [],
+        fridayHourMessages: {},
         hours: ['11:00', '18:00', '18:45', '19:30'],
         hourMessages: {}
       }

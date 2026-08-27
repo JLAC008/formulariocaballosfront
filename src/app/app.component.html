@@ -833,6 +833,17 @@
               <button class="history-action" type="button" (click)="addCustomFridayHour()">Añadir hora de viernes</button>
             </div>
             <p class="warning" *ngIf="customFridayHourError">{{ customFridayHourError }}</p>
+            <div class="hour-message-list friday-message-list" *ngIf="editableFridaySelectedHours.length > 0">
+              <label *ngFor="let hour of editableFridaySelectedHours">
+                Mensaje del viernes {{ hour }}
+                <textarea
+                  [name]="'fridayHourMessage' + hour"
+                  [ngModel]="getFridayHourMessage(hour)"
+                  (ngModelChange)="setFridayHourMessage(hour, $event)"
+                  placeholder="Ejemplo: **Ruta especial de viernes**&#10;Llegad media hora antes para preparar el equipo."
+                ></textarea>
+              </label>
+            </div>
             <p class="limit-note">Los viernes solo se usarán estas franjas, no las franjas normales.</p>
           </div>
           <button class="pay-button" type="submit">Guardar</button>
