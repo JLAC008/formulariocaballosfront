@@ -617,6 +617,12 @@ textarea {
   font-size: 12px;
 }
 
+.summary-history-button {
+  margin: 10px 0 18px;
+  min-height: 38px;
+  width: 100%;
+}
+
 .bonus-box {
   align-items: center;
   background: rgba(184, 134, 35, 0.09);
@@ -2255,6 +2261,12 @@ textarea,
   background: #fff;
   border-color: #e3ddd4;
   color: #0f0f0f;
+}
+
+.summary-history-button {
+  background: #0f0f0f;
+  border-color: #0f0f0f;
+  color: #fff;
 }
 
 .bonus-box,

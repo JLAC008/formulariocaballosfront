@@ -23,7 +23,6 @@
       <div class="site-menu-panel" *ngIf="isAccountMenuOpen">
         <ng-container *ngIf="isCustomer">
           <button type="button" (click)="openProfileModal()">Mi perfil</button>
-          <button type="button" (click)="openHistoryModal()">Recordatorio</button>
           <button type="button" (click)="logoutCurrentSession()">Cerrar sesión</button>
         </ng-container>
         <ng-container *ngIf="isAdmin">
@@ -42,7 +41,7 @@
   <main class="booking-page">
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
+        <p class="eyebrow">Escuela de Equitación Martinez Luna</p>
         <h1>Reserva tu <span>experiencia</span></h1>
         <p class="intro">
           Clases de equitación y rutas adaptadas a tu nivel, con sesiones guardadas en tu cuenta.
@@ -157,6 +156,7 @@
           <span>{{ currentUser.email }}</span>
           <span>{{ currentUser.phone }}</span>
         </div>
+        <button class="history-action summary-history-button" type="button" *ngIf="currentUser" (click)="openHistoryModal()">Recordatorio</button>
 
         <div class="summary">
           <h2>Resumen de tu reserva</h2>
@@ -472,7 +472,7 @@
   <main class="admin-page">
     <header class="admin-topbar">
       <div>
-        <p class="eyebrow">Centro Ecuestre Martinez Luna</p>
+        <p class="eyebrow">Escuela de Equitación Martinez Luna</p>
         <h1>Panel de administrador</h1>
       </div>
       <div class="admin-topbar-actions">
