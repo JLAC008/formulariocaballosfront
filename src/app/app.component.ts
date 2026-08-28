@@ -204,6 +204,7 @@ export class AppComponent {
   isDeleteExperienceModalOpen = false;
   isCancelClassModalOpen = false;
   isAdminUserModalOpen = false;
+  isDeleteAdminUserModalOpen = false;
   isAccountMenuOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
@@ -250,6 +251,7 @@ export class AppComponent {
   bonusPackError = '';
   adminUserForm: AdminUserForm = this.blankAdminUserForm();
   editingAdminUser: CustomerUser | null = null;
+  deletingAdminUser: CustomerUser | null = null;
   adminUserError = '';
   adminUserNotice = '';
   adminUserInProgress = false;
@@ -1871,6 +1873,21 @@ export class AppComponent {
     this.adminUserInProgress = false;
   }
 
+  openDeleteAdminUserModal(user: CustomerUser): void {
+    this.closeAllModals();
+    this.deletingAdminUser = user;
+    this.adminUserError = '';
+    this.adminUserNotice = '';
+    this.isDeleteAdminUserModalOpen = true;
+  }
+
+  closeDeleteAdminUserModal(): void {
+    this.isDeleteAdminUserModalOpen = false;
+    this.deletingAdminUser = null;
+    this.adminUserError = '';
+    this.adminUserInProgress = false;
+  }
+
   async createAdminManagedUser(): Promise<void> {
     const firstName = this.adminUserForm.firstName.trim().replace(/\s+/g, ' ');
     const lastName = this.adminUserForm.lastName.trim().replace(/\s+/g, ' ');
@@ -1950,6 +1967,47 @@ export class AppComponent {
       this.editingAdminUser = null;
       this.adminUserNotice = isEditing ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.';
       this.isAdminUserModalOpen = false;
+    } catch {
+      this.adminUserError = 'No se pudo conectar con el servidor.';
+    } finally {
+      this.adminUserInProgress = false;
+    }
+  }
+
+  async confirmDeleteAdminUser(): Promise<void> {
+    if (!this.deletingAdminUser) {
+      return;
+    }
+
+    const token = this.getAuthToken();
+    if (!token) {
+      this.adminUserError = 'Inicia sesión como administrador para eliminar usuarios.';
+      return;
+    }
+
+    const userToDelete = this.deletingAdminUser;
+    this.adminUserError = '';
+    this.adminUserNotice = '';
+    this.adminUserInProgress = true;
+    try {
+      const response = await fetch(`${API_URL}/admin/users/${userToDelete.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.adminUserError = error?.error || 'No se pudo eliminar el usuario.';
+        return;
+      }
+
+      this.users = this.users.filter((user) => user.id !== userToDelete.id);
+      this.bookingHistory = this.bookingHistory.filter((booking) => booking.userId !== userToDelete.id);
+      this.persistUsers();
+      this.persistBookings();
+      this.closeDeleteAdminUserModal();
+      this.adminUserNotice = 'Usuario eliminado correctamente.';
     } catch {
       this.adminUserError = 'No se pudo conectar con el servidor.';
     } finally {
@@ -2122,7 +2180,9 @@ export class AppComponent {
     this.isDeleteExperienceModalOpen = false;
     this.isCancelClassModalOpen = false;
     this.isAdminUserModalOpen = false;
+    this.isDeleteAdminUserModalOpen = false;
     this.editingAdminUser = null;
+    this.deletingAdminUser = null;
     this.reservationNoticeMessage = '';
     this.pendingHourNoticeMessage = '';
     this.cancellingCustomerBooking = null;

@@ -1788,6 +1788,11 @@ dd {
   margin-top: 4px;
 }
 
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .bonus-pack-admin-form {
   align-items: end;
   border-bottom: 1px solid var(--line);

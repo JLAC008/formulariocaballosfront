@@ -677,8 +677,9 @@
               <td><strong>{{ user.bonuses }}</strong></td>
               <td>{{ getUserReservationsCount(user.id) }}</td>
               <td>{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
-              <td>
+              <td class="table-actions">
                 <button type="button" class="history-action" (click)="openEditAdminUserModal(user)">Editar</button>
+                <button type="button" class="history-action danger-action" (click)="openDeleteAdminUserModal(user)">Eliminar</button>
               </td>
             </tr>
           </tbody>
@@ -957,6 +958,24 @@
             </button>
           </div>
         </form>
+        <p class="warning" *ngIf="adminUserError">{{ adminUserError }}</p>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isDeleteAdminUserModalOpen">
+      <section class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-admin-user-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeDeleteAdminUserModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Eliminar usuario</p>
+        <h2 id="delete-admin-user-modal-title">{{ deletingAdminUser?.name }}</h2>
+        <p class="modal-copy">
+          Se eliminará el usuario y todo su rastro: reservas, sesiones, pagos Stripe y tokens de acceso o verificación.
+        </p>
+        <div class="delete-modal-actions">
+          <button class="history-action" type="button" (click)="closeDeleteAdminUserModal()">Cancelar</button>
+          <button class="history-action danger-action" type="button" (click)="confirmDeleteAdminUser()" [disabled]="adminUserInProgress">
+            {{ adminUserInProgress ? 'Eliminando...' : 'Eliminar usuario' }}
+          </button>
+        </div>
         <p class="warning" *ngIf="adminUserError">{{ adminUserError }}</p>
       </section>
     </div>
