@@ -177,6 +177,10 @@
               <dd>{{ selectedHour }}</dd>
             </div>
             <div *ngIf="selectedExperiences.length > 0">
+              <dt>Personas</dt>
+              <dd>{{ selectedParticipantCount }} persona{{ selectedParticipantCount === 1 ? '' : 's' }}</dd>
+            </div>
+            <div *ngIf="selectedExperiences.length > 0">
               <dt>Pago</dt>
               <dd>{{ formatBonusCost(selectedBonusCost) }}</dd>
             </div>
@@ -241,6 +245,10 @@
             <dt>Hora</dt>
             <dd>{{ selectedHour }}</dd>
           </div>
+          <div>
+            <dt>Personas</dt>
+            <dd>{{ selectedParticipantCount }} persona{{ selectedParticipantCount === 1 ? '' : 's' }}</dd>
+          </div>
         </dl>
         <div class="reservation-notice" *ngIf="reservationNoticeMessage">
           <strong>Importante</strong>
@@ -273,11 +281,24 @@
             <dt>Hora</dt>
             <dd>{{ selectedHour }}</dd>
           </div>
+          <div>
+            <dt>Personas</dt>
+            <dd>{{ selectedParticipantCount }} persona{{ selectedParticipantCount === 1 ? '' : 's' }}</dd>
+          </div>
         </dl>
         <div class="reservation-notice" *ngIf="pendingHourNoticeMessage">
           <strong>Información de la reserva</strong>
           <p class="rich-notice-text" [innerHTML]="formatNoticeText(pendingHourNoticeMessage)"></p>
         </div>
+        <label class="guest-option">
+          <input
+            type="checkbox"
+            name="guestCountModal"
+            [ngModel]="guestCount === 1"
+            (ngModelChange)="setGuestEnabled($event)"
+          >
+          <span>Añadir 1 invitado. Ocupará una plaza más y consumirá una sesión adicional.</span>
+        </label>
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeHourNoticeModal()">Cancelar</button>
           <button class="pay-button" type="button" (click)="confirmHourNoticeAndReserve()">Confirmar reserva</button>
@@ -322,6 +343,7 @@
                 <em [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">{{ getStatusLabel(booking.status) }}</em>
                 <small *ngIf="booking.status === 'CANCELLED'">Sesiones devueltas</small>
               </span>
+              <span>{{ getBookingParticipantCount(booking) }} persona{{ getBookingParticipantCount(booking) === 1 ? '' : 's' }}{{ getBookingParticipantCount(booking) > 1 ? ' (con invitado)' : '' }}</span>
             </div>
             <button
               class="history-action danger-action"
@@ -521,20 +543,21 @@
         <div class="schedule-slot" *ngFor="let hour of adminScheduleHours">
           <div class="schedule-slot-time">
             <strong>{{ hour }}</strong>
-            <span>{{ getAdminConfirmedReservationsByHour(hour).length }} confirmada{{ getAdminConfirmedReservationsByHour(hour).length === 1 ? '' : 's' }}</span>
+            <span>{{ getAdminConfirmedPlacesByHour(hour) }} plaza{{ getAdminConfirmedPlacesByHour(hour) === 1 ? '' : 's' }} ocupada{{ getAdminConfirmedPlacesByHour(hour) === 1 ? '' : 's' }}</span>
           </div>
           <div class="schedule-slot-content" *ngIf="getAdminScheduleGroupsByHour(hour) as scheduleGroups">
             <article *ngFor="let group of scheduleGroups" class="schedule-class-card">
               <div class="schedule-class-header">
                 <div>
                   <strong>{{ group.title }}</strong>
-                  <span>{{ group.bookings.length }}/{{ getAdminScheduleGroupCapacity(group) }} reserva{{ group.bookings.length === 1 ? '' : 's' }}</span>
+                  <span>{{ getAdminScheduleGroupParticipantCount(group) }}/{{ getAdminScheduleGroupCapacity(group) }} plaza{{ getAdminScheduleGroupParticipantCount(group) === 1 ? '' : 's' }} ocupada{{ getAdminScheduleGroupParticipantCount(group) === 1 ? '' : 's' }}</span>
                 </div>
                 <button class="history-action danger-action" type="button" *ngIf="group.bookings[0].status === 'CONFIRMED'" (click)="openCancelClassModal(group)">Cancelar experiencia</button>
               </div>
               <div class="schedule-class-bookings">
                 <div *ngFor="let booking of group.bookings" class="schedule-booking-card" [class.lesson]="booking.type === 'lessons'" [class.route]="booking.type === 'routes'" [class.cancelled]="booking.status === 'CANCELLED'">
                   <span>{{ booking.customerName }} - {{ booking.phone }}</span>
+                  <span>{{ getBookingParticipantCount(booking) }} persona{{ getBookingParticipantCount(booking) === 1 ? '' : 's' }}{{ getBookingParticipantCount(booking) > 1 ? ' (con invitado)' : '' }}</span>
                   <em>{{ booking.payment }} · {{ getStatusLabel(booking.status) }}</em>
                 </div>
               </div>

@@ -106,6 +106,8 @@ interface BookingHistoryItem {
   customerName: string;
   phone: string;
   amount: number;
+  participantCount: number;
+  guestCount: number;
   status: ReservationStatus;
 }
 
@@ -186,6 +188,7 @@ export class AppComponent {
   authMode: AuthMode = 'login';
   activeExperienceType: BookingType = 'lessons';
   selectedExperienceIds: number[] = [];
+  guestCount = 0;
   visibleMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
   selectedDate = this.getNextBookableDate(this.minDate);
   adminDate = this.toDateKey(this.minDate);
@@ -428,7 +431,12 @@ export class AppComponent {
   }
 
   get selectedBonusCost(): number {
-    return this.selectedExperiences.reduce((sum, experience) => sum + this.getExperienceBonusCost(experience), 0);
+    const baseCost = this.selectedExperiences.reduce((sum, experience) => sum + this.getExperienceBonusCost(experience), 0);
+    return baseCost * this.selectedParticipantCount;
+  }
+
+  get selectedParticipantCount(): number {
+    return this.selectedExperiences.length > 0 ? 1 + this.guestCount : 1;
   }
 
   get isSelectedHourAvailable(): boolean {
@@ -494,6 +502,11 @@ export class AppComponent {
 
   getAdminConfirmedReservationsByHour(hour: string): BookingHistoryItem[] {
     return this.getAdminReservationsByHour(hour).filter((booking) => booking.status === 'CONFIRMED');
+  }
+
+  getAdminConfirmedPlacesByHour(hour: string): number {
+    return this.getAdminConfirmedReservationsByHour(hour)
+      .reduce((sum, booking) => sum + this.getBookingParticipantCount(booking), 0);
   }
 
   getAdminScheduleGroupsByHour(hour: string): AdminScheduleGroup[] {
@@ -627,9 +640,16 @@ export class AppComponent {
 
     this.activeExperienceType = type;
     this.selectedExperienceIds = [];
+    this.guestCount = 0;
     this.ensureSelectedHourAvailable();
     this.confirmation = '';
     this.warning = '';
+  }
+
+  setGuestEnabled(enabled: boolean): void {
+    this.guestCount = enabled ? 1 : 0;
+    this.warning = '';
+    this.confirmation = '';
   }
 
   async login(): Promise<void> {
@@ -879,6 +899,8 @@ export class AppComponent {
       customerName: item.customerName || this.customerName,
       phone: item.phone || this.phone,
       amount: Number(item.amount || 0),
+      participantCount: this.normalizeParticipantCount(item.participantCount),
+      guestCount: Math.max(0, this.normalizeParticipantCount(item.participantCount) - 1),
       status: item.status || 'CONFIRMED'
     };
   }
@@ -988,6 +1010,7 @@ export class AppComponent {
   selectExperience(id: number): void {
     if (this.selectedExperienceIds.includes(id)) {
       this.selectedExperienceIds = [];
+      this.guestCount = 0;
     } else {
       this.selectedExperienceIds = [id];
     }
@@ -1045,6 +1068,7 @@ export class AppComponent {
     }
 
     const bonusCost = this.selectedBonusCost;
+    const participantCount = this.selectedParticipantCount;
 
     if (!this.isInBookingRange(this.selectedDate)) {
       this.warning = 'Las experiencias no están disponibles sábados ni domingos. Elige un día entre semana.';
@@ -1107,7 +1131,8 @@ export class AppComponent {
         hour: this.selectedHour,
         payment: 'mock',
         customerName: customer?.name || this.customerName,
-        phone: customer?.phone || this.phone
+        phone: customer?.phone || this.phone,
+        guestCount: this.guestCount
       })
     });
 
@@ -1138,6 +1163,8 @@ export class AppComponent {
       customerName: customer?.name || this.customerName,
       phone: customer?.phone || this.phone,
       amount: Number(saved.amount || 0),
+      participantCount: this.normalizeParticipantCount(saved.participantCount),
+      guestCount: Math.max(0, this.normalizeParticipantCount(saved.participantCount) - 1),
       status: saved.status || 'CONFIRMED'
     };
 
@@ -1147,7 +1174,7 @@ export class AppComponent {
       this.setCurrentUserBonuses(saved.remainingBonuses);
     }
 
-    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} sesión${this.lessonBonuses === 1 ? '' : 'es'}.`;
+    this.reservationMessage = `Has reservado ${selectedCount} experiencia${selectedCount === 1 ? '' : 's'} para ${participantCount} persona${participantCount === 1 ? '' : 's'} por ${this.formatBonusCost(bonusCost)}. Te quedan ${this.lessonBonuses} sesión${this.lessonBonuses === 1 ? '' : 'es'}.`;
     this.reservationNoticeMessage = '';
     this.closeAllModals();
     this.showLowBonusAfterReservation = this.lessonBonuses === 1;
@@ -2602,7 +2629,7 @@ export class AppComponent {
   }
 
   private isSlotFull(experience: Experience, dateKey: string, hour: string): boolean {
-    return this.getSlotBookingsCount(experience, dateKey, hour) >= this.getExperienceCapacity(experience);
+    return this.getSlotBookingsCount(experience, dateKey, hour) + this.selectedParticipantCount > this.getExperienceCapacity(experience);
   }
 
   getExperienceCapacity(experience: Experience | null, fallbackType?: BookingType): number {
@@ -2610,13 +2637,30 @@ export class AppComponent {
   }
 
   private getSlotBookingsCount(experience: Experience, dateKey: string, hour: string): number {
-    return this.bookingHistory.filter((booking) =>
-      booking.dateKey === dateKey
-      && booking.hour === hour
-      && this.isBookingForExperience(booking, experience)
-      && booking.status !== 'CANCELLED'
-      && this.isBookingReminderActive(booking)
-    ).length;
+    return this.bookingHistory
+      .filter((booking) =>
+        booking.dateKey === dateKey
+        && booking.hour === hour
+        && this.isBookingForExperience(booking, experience)
+        && booking.status !== 'CANCELLED'
+        && this.isBookingReminderActive(booking)
+      )
+      .reduce((sum, booking) => sum + this.getBookingParticipantCount(booking), 0);
+  }
+
+  getAdminScheduleGroupParticipantCount(group: AdminScheduleGroup): number {
+    return group.bookings
+      .filter((booking) => booking.status !== 'CANCELLED')
+      .reduce((sum, booking) => sum + this.getBookingParticipantCount(booking), 0);
+  }
+
+  getBookingParticipantCount(booking: BookingHistoryItem): number {
+    return this.normalizeParticipantCount(booking.participantCount);
+  }
+
+  private normalizeParticipantCount(value: unknown): number {
+    const participants = Math.floor(Number(value));
+    return Number.isFinite(participants) && participants >= 1 ? Math.min(participants, 2) : 1;
   }
 
   private isBookingForExperience(booking: BookingHistoryItem, experience: Experience): boolean {
