@@ -728,6 +728,32 @@ dd {
   margin: 12px 0 2px;
 }
 
+.guest-option {
+  align-items: center;
+  background: rgba(255, 252, 247, 0.8);
+  border: 1px solid var(--line);
+  color: #5f564f;
+  display: flex;
+  gap: 10px;
+  line-height: 1.4;
+  margin: 0 0 16px;
+  min-height: 42px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.guest-option input {
+  flex: 0 0 auto;
+  height: auto;
+  margin: 0;
+  width: auto;
+}
+
+.guest-option span {
+  color: #5f564f;
+  font-size: 13px;
+}
+
 .summary-column > .pay-button {
   margin-top: 16px;
 }
