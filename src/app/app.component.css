@@ -1774,7 +1774,13 @@ dd {
 .admin-card-actions {
   display: grid;
   gap: 8px;
+  grid-template-columns: 1fr;
   min-width: 140px;
+}
+
+.admin-card-actions button {
+  min-height: 40px;
+  width: 100%;
 }
 
 .danger-action {
@@ -2134,7 +2140,8 @@ dd {
 
   .admin-card-actions {
     grid-column: 1 / -1;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-width: 0;
   }
 
   .form-grid {
@@ -2173,6 +2180,7 @@ dd {
   .admin-user-form,
   .bonus-pack-admin-form,
   .bonus-pack-admin-card,
+  .admin-card-actions,
   .schedule-slot {
     grid-template-columns: 1fr;
   }
