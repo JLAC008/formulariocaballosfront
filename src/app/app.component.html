@@ -339,7 +339,7 @@
               <strong>{{ booking.title }}</strong>
               <span>{{ getTypeLabel(booking.type) }} · {{ booking.date }}</span>
               <span class="history-meta-line">
-                {{ booking.hour }} · {{ booking.payment }}
+                {{ booking.hour }}
                 <em [class.cancelled]="booking.status === 'CANCELLED'" [class.confirmed]="booking.status === 'CONFIRMED'">{{ getStatusLabel(booking.status) }}</em>
                 <small *ngIf="booking.status === 'CANCELLED'">Sesiones devueltas</small>
               </span>
@@ -559,7 +559,7 @@
                 <div *ngFor="let booking of group.bookings" class="schedule-booking-card" [class.lesson]="booking.type === 'lessons'" [class.route]="booking.type === 'routes'" [class.cancelled]="booking.status === 'CANCELLED'">
                   <span>{{ booking.customerName }} - {{ booking.phone }}</span>
                   <span>{{ getBookingParticipantCount(booking) }} persona{{ getBookingParticipantCount(booking) === 1 ? '' : 's' }}{{ getBookingParticipantCount(booking) > 1 ? ' (con invitado)' : '' }}</span>
-                  <em>{{ booking.payment }} · {{ getStatusLabel(booking.status) }}</em>
+                  <em>{{ getStatusLabel(booking.status) }}</em>
                 </div>
               </div>
             </article>
