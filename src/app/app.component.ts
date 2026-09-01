@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 type BookingType = 'lessons' | 'routes';
 type AppView = 'client' | 'login' | 'admin';
-type AdminTab = 'schedule' | 'experiences' | 'bonusPacks' | 'users' | 'stats';
+type AdminTab = 'schedule' | 'blockedDates' | 'experiences' | 'bonusPacks' | 'users' | 'stats';
 type ReservationStatus = 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 type AuthMode = 'login' | 'register' | 'forgot' | 'reset';
 type UserRole = 'guest' | 'customer' | 'admin';
@@ -30,6 +30,8 @@ interface CalendarDay {
   day: number | null;
   date: Date | null;
   disabled?: boolean;
+  blocked?: boolean;
+  selected?: boolean;
   today?: boolean;
 }
 
@@ -189,6 +191,17 @@ export class AppComponent {
   activeExperienceType: BookingType = 'lessons';
   selectedExperienceIds: number[] = [];
   guestCount = 0;
+  blockedDates: string[] = [];
+  blockedCalendarMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
+  selectedBlockedDates: string[] = [];
+  blockedRegisterMonth = '';
+  showPastBlockedDates = false;
+  blockedDateError = '';
+  blockedDateNotice = '';
+  blockedDateInProgress = false;
+  pendingBlockedDateConflictDates: string[] = [];
+  pendingBlockedDateConflictBookings: BookingHistoryItem[] = [];
+  blockedDateConflictError = '';
   visibleMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
   selectedDate = this.getNextBookableDate(this.minDate);
   adminDate = this.toDateKey(this.minDate);
@@ -207,6 +220,7 @@ export class AppComponent {
   isDeleteExperienceModalOpen = false;
   isCancelClassModalOpen = false;
   isAdminUserModalOpen = false;
+  isBlockedDateConflictModalOpen = false;
   isAccountMenuOpen = false;
   reservationMessage = '';
   reservationNoticeMessage = '';
@@ -262,6 +276,7 @@ export class AppComponent {
     void this.handleAuthLinks();
     void this.loadRemoteCurrentUser();
     void this.loadRemoteExperiences();
+    void this.loadRemoteBlockedDates();
     void this.loadBonusPacks();
     void this.handleStripeBonusReturn();
     if (this.view === 'admin' && this.isAdminLoggedIn()) {
@@ -380,12 +395,90 @@ export class AppComponent {
       days.push({
         day,
         date,
-        disabled: !this.isInBookingRange(date),
+        disabled: !this.isInBookingRange(date) || this.isDateBlocked(date),
         today: this.isSameDate(date, this.minDate)
       });
     }
 
     return days;
+  }
+
+  get blockedCalendar(): CalendarDay[] {
+    const year = this.blockedCalendarMonth.getFullYear();
+    const month = this.blockedCalendarMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const mondayOffset = (firstDay.getDay() + 6) % 7;
+    const days: CalendarDay[] = Array.from({ length: mondayOffset }, () => ({
+      day: null,
+      date: null,
+      disabled: true
+    }));
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const date = new Date(year, month, day);
+      const dateKey = this.toDateKey(date);
+      days.push({
+        day,
+        date,
+        disabled: date < this.minDate || this.isWeekend(date),
+        blocked: this.isDateBlocked(date),
+        selected: !this.isWeekend(date) && this.selectedBlockedDates.includes(dateKey),
+        today: this.isSameDate(date, this.minDate)
+      });
+    }
+
+    return days;
+  }
+
+  get blockedCalendarMonthLabel(): string {
+    return `${MONTH_NAMES[this.blockedCalendarMonth.getMonth()]} ${this.blockedCalendarMonth.getFullYear()}`;
+  }
+
+  get canGoPreviousBlockedMonth(): boolean {
+    const currentMonth = new Date(this.minDate.getFullYear(), this.minDate.getMonth(), 1);
+    return this.blockedCalendarMonth > currentMonth;
+  }
+
+  get selectedBlockedDatesAreBlocked(): boolean {
+    return this.selectedBlockedDates.length > 0
+      && this.selectedBlockedDates.every((dateKey) => this.blockedDates.includes(dateKey));
+  }
+
+  get selectedBlockedDatesActionLabel(): string {
+    const action = this.selectedBlockedDatesAreBlocked ? 'Desbloquear' : 'Bloquear';
+    const count = this.selectedBlockedDates.length;
+    return `${action} ${count} día${count === 1 ? '' : 's'}`;
+  }
+
+  get blockedDateMonthOptions(): { key: string; label: string }[] {
+    return [...new Set(this.registeredBlockedDates.map((dateKey) => dateKey.slice(0, 7)))].sort().map((key) => ({
+      key,
+      label: new Intl.DateTimeFormat('es-ES', {
+        month: 'long',
+        year: 'numeric'
+      }).format(new Date(`${key}-01T00:00:00`))
+    }));
+  }
+
+  get filteredBlockedDates(): string[] {
+    if (!this.blockedRegisterMonth) {
+      return this.registeredBlockedDates;
+    }
+    return this.registeredBlockedDates.filter((dateKey) => dateKey.startsWith(this.blockedRegisterMonth));
+  }
+
+  get registeredBlockedDates(): string[] {
+    if (this.showPastBlockedDates) {
+      return this.blockedDates;
+    }
+    return this.blockedDates.filter((dateKey) => new Date(`${dateKey}T00:00:00`) >= this.minDate);
+  }
+
+  onBlockedHistoryFilterChange(): void {
+    if (this.blockedRegisterMonth && !this.blockedDateMonthOptions.some((month) => month.key === this.blockedRegisterMonth)) {
+      this.blockedRegisterMonth = '';
+    }
   }
 
   get canGoPreviousMonth(): boolean {
@@ -795,6 +888,288 @@ export class AppComponent {
     }
   }
 
+  private async loadRemoteBlockedDates(): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/blocked-dates`);
+      if (!response.ok) return;
+      const dates = await response.json();
+      if (Array.isArray(dates)) {
+        this.blockedDates = dates.filter((date): date is string => typeof date === 'string');
+        this.ensureSelectedDateAvailable();
+      }
+    } catch {
+      // The calendar remains usable when the API is temporarily unavailable.
+    }
+  }
+
+  selectBlockedCalendarDay(day: CalendarDay): void {
+    if (!day.date || day.disabled || this.isWeekend(day.date)) {
+      return;
+    }
+
+    const dateKey = this.toDateKey(day.date);
+    const selectingBlockedDate = this.blockedDates.includes(dateKey);
+    const currentSelectionIsBlocked = this.selectedBlockedDatesAreBlocked;
+    if (this.selectedBlockedDates.length > 0 && currentSelectionIsBlocked !== selectingBlockedDate) {
+      this.selectedBlockedDates = [];
+    }
+    this.selectedBlockedDates = this.selectedBlockedDates.includes(dateKey)
+      ? this.selectedBlockedDates.filter((selectedDate) => selectedDate !== dateKey)
+      : [...this.selectedBlockedDates, dateKey];
+    this.blockedDateError = '';
+    this.blockedDateNotice = '';
+  }
+
+  changeBlockedCalendarMonth(delta: number): void {
+    const nextMonth = new Date(this.blockedCalendarMonth.getFullYear(), this.blockedCalendarMonth.getMonth() + delta, 1);
+    if (delta < 0 && !this.canGoPreviousBlockedMonth) {
+      return;
+    }
+    this.blockedCalendarMonth = nextMonth;
+  }
+
+  async blockSelectedDates(skipConflictCheck = false): Promise<void> {
+    this.selectedBlockedDates = this.selectedBlockedDates.filter((dateKey) => {
+      const date = new Date(`${dateKey}T00:00:00`);
+      return date >= this.minDate && !this.isWeekend(date);
+    });
+    const token = this.getAuthToken();
+    this.blockedDateError = '';
+    this.blockedDateNotice = '';
+
+    if (this.selectedBlockedDates.length === 0) {
+      this.blockedDateError = 'Selecciona uno o varios días en el calendario.';
+      return;
+    }
+    if (!token) {
+      this.blockedDateError = 'La sesión de administrador ha caducado.';
+      return;
+    }
+
+    if (!skipConflictCheck) {
+      const conflictDates = this.selectedBlockedDates.filter((dateKey) =>
+        this.bookingHistory.some((booking) => booking.dateKey === dateKey && booking.status === 'CONFIRMED')
+      );
+      const conflictBookings = this.bookingHistory.filter((booking) =>
+        conflictDates.includes(booking.dateKey) && booking.status === 'CONFIRMED'
+      );
+      if (conflictBookings.length > 0) {
+        this.pendingBlockedDateConflictDates = conflictDates;
+        this.pendingBlockedDateConflictBookings = conflictBookings;
+        this.blockedDateConflictError = '';
+        this.isBlockedDateConflictModalOpen = true;
+        return;
+      }
+    }
+
+    this.blockedDateInProgress = true;
+    const blockedSuccessfully: string[] = [];
+    const errors: string[] = [];
+    try {
+      for (const dateKey of this.selectedBlockedDates.slice().sort()) {
+        const response = await fetch(`${API_URL}/blocked-dates`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ dateKey })
+        });
+        if (this.handleExpiredSession(response)) return;
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          errors.push(`${this.formatDateKey(dateKey)}: ${error?.error || 'no se pudo bloquear'}`);
+          continue;
+        }
+        blockedSuccessfully.push(dateKey);
+      }
+
+      await this.loadRemoteBlockedDates();
+      this.selectedBlockedDates = this.selectedBlockedDates.filter((dateKey) => !blockedSuccessfully.includes(dateKey));
+      if (blockedSuccessfully.length > 0) {
+        this.blockedDateNotice = blockedSuccessfully.length === 1
+          ? 'Día bloqueado correctamente.'
+          : `${blockedSuccessfully.length} días bloqueados correctamente.`;
+      }
+      if (errors.length > 0) {
+        this.blockedDateError = errors.join(' ');
+      }
+    } catch {
+      this.blockedDateError = 'No se pudo conectar con el servidor.';
+    } finally {
+      this.blockedDateInProgress = false;
+    }
+  }
+
+  async manageSelectedBlockedDates(): Promise<void> {
+    if (this.selectedBlockedDatesAreBlocked) {
+      await this.unblockSelectedDates();
+      return;
+    }
+    await this.blockSelectedDates();
+  }
+
+  async unblockSelectedDates(): Promise<void> {
+    const token = this.getAuthToken();
+    this.blockedDateError = '';
+    this.blockedDateNotice = '';
+    if (this.selectedBlockedDates.length === 0) {
+      this.blockedDateError = 'Selecciona uno o varios días en el calendario.';
+      return;
+    }
+    if (!token) {
+      this.blockedDateError = 'La sesión de administrador ha caducado.';
+      return;
+    }
+
+    this.blockedDateInProgress = true;
+    const removedSuccessfully: string[] = [];
+    const errors: string[] = [];
+    try {
+      for (const dateKey of this.selectedBlockedDates.slice().sort()) {
+        const response = await fetch(`${API_URL}/blocked-dates/${encodeURIComponent(dateKey)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (this.handleExpiredSession(response)) return;
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          errors.push(`${this.formatDateKey(dateKey)}: ${error?.error || 'no se pudo desbloquear'}`);
+          continue;
+        }
+        removedSuccessfully.push(dateKey);
+      }
+
+      await this.loadRemoteBlockedDates();
+      this.selectedBlockedDates = this.selectedBlockedDates.filter((dateKey) => !removedSuccessfully.includes(dateKey));
+      if (removedSuccessfully.length > 0) {
+        this.blockedDateNotice = removedSuccessfully.length === 1
+          ? 'Día desbloqueado correctamente.'
+          : `${removedSuccessfully.length} días desbloqueados correctamente.`;
+      }
+      if (errors.length > 0) {
+        this.blockedDateError = errors.join(' ');
+      }
+    } catch {
+      this.blockedDateError = 'No se pudo conectar con el servidor.';
+    } finally {
+      this.blockedDateInProgress = false;
+    }
+  }
+
+  async removeBlockedDate(dateKey: string): Promise<void> {
+    const token = this.getAuthToken();
+    this.blockedDateError = '';
+    this.blockedDateNotice = '';
+    if (!token) {
+      this.blockedDateError = 'La sesión de administrador ha caducado.';
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/blocked-dates/${encodeURIComponent(dateKey)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (this.handleExpiredSession(response)) return;
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        this.blockedDateError = error?.error || 'No se pudo desbloquear el día.';
+        return;
+      }
+
+      const dates = await response.json();
+      this.blockedDates = Array.isArray(dates) ? dates.filter((date: unknown): date is string => typeof date === 'string') : this.blockedDates.filter((date) => date !== dateKey);
+      this.selectedBlockedDates = this.selectedBlockedDates.filter((selectedDate) => selectedDate !== dateKey);
+      this.blockedDateNotice = 'Día desbloqueado correctamente.';
+      this.ensureSelectedDateAvailable();
+    } catch {
+      this.blockedDateError = 'No se pudo conectar con el servidor.';
+    }
+  }
+
+  closeBlockedDateConflictModal(): void {
+    if (this.blockedDateInProgress) {
+      return;
+    }
+    this.isBlockedDateConflictModalOpen = false;
+    this.pendingBlockedDateConflictDates = [];
+    this.pendingBlockedDateConflictBookings = [];
+    this.blockedDateConflictError = '';
+  }
+
+  async confirmBlockedDateConflict(): Promise<void> {
+    const token = this.getAuthToken();
+    if (!token || this.blockedDateInProgress) {
+      return;
+    }
+
+    this.blockedDateInProgress = true;
+    this.blockedDateConflictError = '';
+    const failedBookings: BookingHistoryItem[] = [];
+    try {
+      for (const booking of this.pendingBlockedDateConflictBookings) {
+        const response = await fetch(`${API_URL}/bookings/${booking.id}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: 'CANCELLED' })
+        });
+        if (this.handleExpiredSession(response)) return;
+        if (!response.ok) {
+          failedBookings.push(booking);
+          continue;
+        }
+
+        const saved = await response.json().catch(() => null);
+        this.bookingHistory = this.bookingHistory.map((item) => item.id === booking.id
+          ? { ...item, status: 'CANCELLED' }
+          : item);
+        if (saved?.remainingBonuses !== null && typeof saved?.remainingBonuses === 'number' && saved?.userId) {
+          this.users = this.users.map((user) => user.id === saved.userId
+            ? { ...user, bonuses: saved.remainingBonuses }
+            : user);
+        }
+      }
+
+      if (failedBookings.length > 0) {
+        this.pendingBlockedDateConflictBookings = failedBookings;
+        this.blockedDateConflictError = 'No se han podido cancelar todas las reservas. No se ha bloqueado el día.';
+        return;
+      }
+
+      this.persistUsers();
+      this.persistBookings();
+      this.isBlockedDateConflictModalOpen = false;
+      this.pendingBlockedDateConflictDates = [];
+      this.pendingBlockedDateConflictBookings = [];
+      await this.blockSelectedDates(true);
+    } catch {
+      this.blockedDateConflictError = 'No se pudo conectar con el servidor. No se ha bloqueado el día.';
+    } finally {
+      this.blockedDateInProgress = false;
+    }
+  }
+
+  formatDateKey(dateKey: string): string {
+    return new Intl.DateTimeFormat('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(new Date(`${dateKey}T00:00:00`));
+  }
+
+  isDateBlocked(date: Date): boolean {
+    return this.blockedDates.includes(this.toDateKey(date));
+  }
+
+  isAdminDateBlocked(): boolean {
+    return this.blockedDates.includes(this.adminDate);
+  }
+
   private async loadRemoteUserBookings(): Promise<void> {
     const token = this.getAuthToken();
     if (!token) return;
@@ -1073,7 +1448,9 @@ export class AppComponent {
     const participantCount = this.selectedParticipantCount;
 
     if (!this.isInBookingRange(this.selectedDate)) {
-      this.warning = 'Las experiencias no están disponibles sábados ni domingos. Elige un día entre semana.';
+      this.warning = this.isDateBlocked(this.selectedDate)
+        ? 'No se pueden reservar experiencias en esta fecha.'
+        : 'Las experiencias no están disponibles sábados ni domingos. Elige un día entre semana.';
       this.confirmation = '';
       return;
     }
@@ -1516,7 +1893,7 @@ export class AppComponent {
 
   setAdminTab(tab: AdminTab): void {
     this.activeAdminTab = tab;
-    if (tab === 'users' || tab === 'stats' || tab === 'schedule') {
+    if (tab === 'users' || tab === 'stats' || tab === 'schedule' || tab === 'blockedDates') {
       void this.loadRemoteAdminState();
     } else if (tab === 'bonusPacks') {
       void this.loadAdminBonusPacks();
@@ -2159,6 +2536,7 @@ export class AppComponent {
     this.isDeleteExperienceModalOpen = false;
     this.isCancelClassModalOpen = false;
     this.isAdminUserModalOpen = false;
+    this.isBlockedDateConflictModalOpen = false;
     this.editingAdminUser = null;
     this.reservationNoticeMessage = '';
     this.pendingHourNoticeMessage = '';
@@ -2844,15 +3222,25 @@ export class AppComponent {
 
   private isInBookingRange(date: Date): boolean {
     const day = this.startOfDay(date);
-    return day >= this.minDate && day <= this.maxDate && !this.isWeekend(day);
+    return day >= this.minDate && day <= this.maxDate && !this.isWeekend(day) && !this.isDateBlocked(day);
   }
 
   private getNextBookableDate(date: Date): Date {
     const nextDate = this.startOfDay(date);
-    while (this.isWeekend(nextDate)) {
+    while (this.isWeekend(nextDate) || this.isDateBlocked(nextDate)) {
       nextDate.setDate(nextDate.getDate() + 1);
     }
     return nextDate;
+  }
+
+  private ensureSelectedDateAvailable(): void {
+    if (this.isInBookingRange(this.selectedDate)) {
+      return;
+    }
+
+    this.selectedDate = this.getNextBookableDate(this.minDate);
+    this.visibleMonth = new Date(this.selectedDate.getFullYear(), this.selectedDate.getMonth(), 1);
+    this.ensureSelectedHourAvailable();
   }
 
   private isWeekend(date: Date): boolean {

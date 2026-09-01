@@ -524,6 +524,7 @@
 
     <nav class="admin-tabs" aria-label="Administración">
       <button type="button" [class.active]="activeAdminTab === 'schedule'" (click)="setAdminTab('schedule')">Agenda</button>
+      <button type="button" [class.active]="activeAdminTab === 'blockedDates'" (click)="setAdminTab('blockedDates')">Vacaciones / festivos</button>
       <button type="button" [class.active]="activeAdminTab === 'experiences'" (click)="setAdminTab('experiences')">Experiencias</button>
       <button type="button" [class.active]="activeAdminTab === 'bonusPacks'" (click)="setAdminTab('bonusPacks')">Sesiones</button>
       <button type="button" [class.active]="activeAdminTab === 'users'" (click)="setAdminTab('users')">Usuarios</button>
@@ -565,6 +566,85 @@
             <p class="history-empty" *ngIf="scheduleGroups.length === 0">Franja disponible.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="admin-section" *ngIf="activeAdminTab === 'blockedDates'">
+      <div class="section-actions">
+        <div>
+          <h2>Vacaciones / festivos</h2>
+          <p>Bloquea vacaciones o cualquier día en el que no quieras aceptar reservas.</p>
+        </div>
+      </div>
+
+      <div class="blocked-days-panel">
+        <div class="blocked-days-copy">
+          <span class="blocked-days-kicker">Gestión de disponibilidad</span>
+          <h3>Selecciona los días sin reservas</h3>
+          <p>Marca uno o varios días para cerrar la agenda durante vacaciones, festivos u otros periodos.</p>
+          <p class="limit-note" *ngIf="blockedDates.length > 0">Los días marcados en dorado están bloqueados. Selecciona uno para desbloquearlo.</p>
+        </div>
+        <div class="blocked-days-calendar">
+          <div class="blocked-calendar-header">
+            <button type="button" aria-label="Mes anterior" [disabled]="!canGoPreviousBlockedMonth" (click)="changeBlockedCalendarMonth(-1)">&lt;</button>
+            <strong>{{ blockedCalendarMonthLabel }}</strong>
+            <button type="button" aria-label="Mes siguiente" (click)="changeBlockedCalendarMonth(1)">&gt;</button>
+          </div>
+          <div class="blocked-calendar-grid">
+            <span class="weekday" *ngFor="let day of weekDays">{{ day }}</span>
+            <button
+              type="button"
+              *ngFor="let day of blockedCalendar"
+              [class.empty]="!day.day"
+              [class.disabled]="day.disabled"
+              [class.blocked]="day.blocked"
+              [class.selected]="day.selected"
+              [class.today]="day.today"
+              [disabled]="day.disabled"
+              (click)="selectBlockedCalendarDay(day)"
+            >
+              {{ day.day || '' }}
+            </button>
+          </div>
+          <div class="blocked-selection" *ngIf="selectedBlockedDates.length > 0">
+            <span>{{ selectedBlockedDates.length }} día{{ selectedBlockedDates.length === 1 ? '' : 's' }} seleccionado{{ selectedBlockedDates.length === 1 ? '' : 's' }}</span>
+            <button class="pay-button" type="button" [disabled]="blockedDateInProgress" (click)="manageSelectedBlockedDates()">
+              {{ blockedDateInProgress ? 'Procesando...' : selectedBlockedDatesActionLabel }}
+            </button>
+          </div>
+          <p class="warning" *ngIf="blockedDateError">{{ blockedDateError }}</p>
+          <p class="confirmation" *ngIf="blockedDateNotice">{{ blockedDateNotice }}</p>
+        </div>
+      </div>
+
+      <div class="blocked-days-register">
+        <div class="blocked-register-header">
+          <div>
+            <span class="blocked-days-kicker">Registro actual</span>
+            <h3>Días bloqueados</h3>
+          </div>
+          <strong>{{ filteredBlockedDates.length }}</strong>
+        </div>
+        <div class="blocked-register-controls" *ngIf="blockedDates.length > 0">
+          <label class="blocked-register-past-toggle">
+            <input type="checkbox" [(ngModel)]="showPastBlockedDates" (ngModelChange)="onBlockedHistoryFilterChange()">
+            <span>Mostrar vacaciones pasadas</span>
+          </label>
+          <label class="blocked-register-filter">
+            <span>Filtrar por mes</span>
+            <select [(ngModel)]="blockedRegisterMonth">
+              <option value="">Todos los meses</option>
+              <option *ngFor="let month of blockedDateMonthOptions" [value]="month.key">{{ month.label }}</option>
+            </select>
+          </label>
+        </div>
+        <p *ngIf="blockedDates.length === 0" class="history-empty">Todavía no hay días bloqueados.</p>
+        <p *ngIf="blockedDates.length > 0 && !showPastBlockedDates && registeredBlockedDates.length === 0" class="history-empty">No hay vacaciones actuales o futuras. Activa el histórico para ver las pasadas.</p>
+        <p *ngIf="registeredBlockedDates.length > 0 && filteredBlockedDates.length === 0" class="history-empty">No hay días bloqueados en este mes.</p>
+        <div class="blocked-register-list" *ngIf="filteredBlockedDates.length > 0">
+          <span *ngFor="let dateKey of filteredBlockedDates">{{ formatDateKey(dateKey) }}</span>
+        </div>
+        <p class="limit-note" *ngIf="filteredBlockedDates.length > 0">Selecciona una fecha marcada en dorado para desbloquearla.</p>
       </div>
     </section>
 
@@ -931,6 +1011,32 @@
         <div class="delete-modal-actions">
           <button class="history-action" type="button" (click)="closeCancelClassModal()">Volver</button>
           <button class="history-action danger-action" type="button" (click)="confirmCancelClass()">Confirmar cancelación</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" *ngIf="isBlockedDateConflictModalOpen">
+      <section class="delete-modal blocked-date-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="blocked-date-conflict-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" [disabled]="blockedDateInProgress" (click)="closeBlockedDateConflictModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Reservas existentes</p>
+        <h2 id="blocked-date-conflict-modal-title">Este día ya tiene reservas</h2>
+        <p class="modal-copy">
+          Has seleccionado un día con reservas confirmadas. Si continúas, se cancelarán estas reservas, se devolverán las sesiones y el día quedará bloqueado para nuevas reservas.
+        </p>
+        <div class="blocked-conflict-list">
+          <div class="blocked-conflict-day" *ngFor="let dateKey of pendingBlockedDateConflictDates">
+            <strong>{{ formatDateKey(dateKey) }}</strong>
+            <span *ngFor="let booking of pendingBlockedDateConflictBookings">
+              <ng-container *ngIf="booking.dateKey === dateKey">{{ booking.customerName }} · {{ booking.hour }} · {{ getBookingParticipantCount(booking) }} persona{{ getBookingParticipantCount(booking) === 1 ? '' : 's' }}</ng-container>
+            </span>
+          </div>
+        </div>
+        <p class="warning" *ngIf="blockedDateConflictError">{{ blockedDateConflictError }}</p>
+        <div class="delete-modal-actions">
+          <button class="history-action" type="button" [disabled]="blockedDateInProgress" (click)="closeBlockedDateConflictModal()">Mantener reservas</button>
+          <button class="history-action danger-action" type="button" [disabled]="blockedDateInProgress" (click)="confirmBlockedDateConflict()">
+            {{ blockedDateInProgress ? 'Procesando...' : 'Cancelar y bloquear día' }}
+          </button>
         </div>
       </section>
     </div>

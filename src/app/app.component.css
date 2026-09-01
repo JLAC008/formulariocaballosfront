@@ -1596,6 +1596,289 @@ dd {
   max-width: 210px;
 }
 
+.blocked-days-panel {
+  background: rgba(184, 134, 35, 0.06);
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 32px;
+  grid-template-columns: minmax(220px, 0.72fr) minmax(430px, 1.28fr);
+  margin-bottom: 24px;
+  padding: 28px;
+}
+
+.blocked-days-copy {
+  align-self: center;
+  display: grid;
+  gap: 10px;
+  max-width: 300px;
+}
+
+.blocked-days-kicker {
+  color: var(--gold-deep);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.blocked-days-copy h3 {
+  color: #2f261f;
+  font-size: 20px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.blocked-days-copy p {
+  margin: 0;
+}
+
+.blocked-days-copy .limit-note {
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
+.blocked-days-calendar {
+  display: grid;
+  gap: 14px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.blocked-calendar-header {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+}
+
+.blocked-calendar-header strong {
+  color: #5f4a3d;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.blocked-calendar-header button {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: #5f4a3d;
+  min-height: 36px;
+}
+
+.blocked-calendar-header button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.blocked-calendar-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.blocked-calendar-grid .weekday {
+  color: #80642a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.blocked-calendar-grid button {
+  background: rgba(255, 252, 247, 0.86);
+  border: 1px solid var(--line);
+  color: #2f261f;
+  min-height: 46px;
+}
+
+.blocked-calendar-grid button.empty {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.blocked-calendar-grid button:disabled:not(.empty) {
+  color: #c6bbb0;
+  cursor: not-allowed;
+  opacity: 0.65;
+  text-decoration: line-through;
+}
+
+.blocked-calendar-grid button:not(:disabled):hover,
+.blocked-calendar-grid button.selected {
+  background: #181818;
+  border-color: #181818;
+  color: #fff;
+}
+
+.blocked-calendar-grid button.blocked {
+  background: rgba(184, 134, 35, 0.24);
+  border-color: var(--gold);
+  color: #6f531c;
+}
+
+.blocked-calendar-grid button.blocked.selected {
+  background: #181818;
+  border-color: #181818;
+  color: #fff;
+}
+
+.blocked-calendar-grid button.today {
+  box-shadow: inset 0 -3px 0 var(--gold);
+}
+
+.blocked-selection {
+  align-items: center;
+  border: 1px solid var(--line);
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding: 12px 14px;
+}
+
+.blocked-selection > span {
+  color: #5f4a3d;
+  font-weight: 700;
+}
+
+.blocked-selection .pay-button {
+  flex: 0 0 auto;
+  margin-top: 0;
+  min-width: 170px;
+  width: auto;
+}
+
+.blocked-days-calendar > .warning,
+.blocked-days-calendar > .confirmation {
+  margin: 0;
+}
+
+.blocked-days-register {
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 22px;
+}
+
+.blocked-register-header {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.blocked-register-header h3 {
+  color: #2f261f;
+  font-size: 22px;
+  margin: 5px 0 0;
+}
+
+.blocked-register-header > strong {
+  color: var(--gold-deep);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.blocked-register-filter {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  max-width: 360px;
+}
+
+.blocked-register-filter span {
+  color: #5f4a3d;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.blocked-register-filter select {
+  background: rgba(255, 252, 247, 0.86);
+  border: 1px solid var(--line);
+  color: #62564c;
+  min-height: 36px;
+  padding: 0 10px;
+  text-transform: capitalize;
+  width: 100%;
+}
+
+.blocked-register-controls {
+  align-items: center;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.blocked-register-past-toggle {
+  align-items: center;
+  color: #5f4a3d;
+  display: inline-flex;
+  font-size: 13px;
+  gap: 8px;
+}
+
+.blocked-register-past-toggle input {
+  accent-color: var(--gold-deep);
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.blocked-register-list {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.blocked-register-list span {
+  background: rgba(184, 134, 35, 0.08);
+  border: 1px solid var(--line);
+  color: #5f4a3d;
+  padding: 11px 13px;
+  text-transform: capitalize;
+}
+
+.blocked-days-register > .limit-note {
+  margin-top: 12px;
+}
+
+.blocked-date-conflict-modal {
+  max-width: 560px;
+}
+
+.blocked-conflict-list {
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+  padding: 12px;
+}
+
+.blocked-conflict-day {
+  display: grid;
+  gap: 5px;
+}
+
+.blocked-conflict-day + .blocked-conflict-day {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+
+.blocked-conflict-day strong {
+  color: #6f531c;
+  text-transform: capitalize;
+}
+
+.blocked-conflict-day span {
+  color: #5f564f;
+  font-size: 13px;
+}
+
 .schedule-board {
   border: 1px solid var(--line);
   display: grid;
@@ -2129,6 +2412,15 @@ dd {
     overflow-x: auto;
   }
 
+  .blocked-days-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .blocked-days-copy,
+  .blocked-days-calendar {
+    max-width: none;
+  }
+
   .admin-experience-card {
     grid-template-columns: 96px 1fr;
   }
@@ -2182,6 +2474,39 @@ dd {
   .bonus-pack-admin-card,
   .admin-card-actions,
   .schedule-slot {
+    grid-template-columns: 1fr;
+  }
+
+  .blocked-calendar-grid,
+  .blocked-calendar-header {
+    max-width: none;
+  }
+
+  .blocked-days-panel {
+    gap: 22px;
+    padding: 18px;
+  }
+
+  .blocked-selection {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .blocked-register-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .blocked-register-filter {
+    max-width: none;
+  }
+
+  .blocked-selection .pay-button {
+    width: 100%;
+  }
+
+  .blocked-register-list {
     grid-template-columns: 1fr;
   }
 
