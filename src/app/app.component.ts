@@ -425,7 +425,7 @@ export class AppComponent {
       && this.isSelectedHourAvailable
       && !this.hasCurrentUserBookedSelectedSlot
       && !this.isSelectedSlotFull
-      && !this.isSelectedSlotPast;
+      && !this.isSelectedSlotTooCloseToStart;
   }
 
   get selectedBonusCost(): number {
@@ -455,6 +455,10 @@ export class AppComponent {
 
   get isSelectedSlotPast(): boolean {
     return this.isSlotPast(this.toDateKey(this.selectedDate), this.selectedHour);
+  }
+
+  get isSelectedSlotTooCloseToStart(): boolean {
+    return this.isSlotWithinBookingCutoff(this.toDateKey(this.selectedDate), this.selectedHour);
   }
 
   get selectedHourNotice(): string {
@@ -1092,6 +1096,12 @@ export class AppComponent {
       return;
     }
 
+    if (this.isSelectedSlotTooCloseToStart) {
+      this.warning = 'No se puede reservar una experiencia cuando faltan 2 horas o menos para que empiece.';
+      this.confirmation = '';
+      return;
+    }
+
     if (this.hasCurrentUserBookedSelectedSlot) {
       this.warning = 'Ya tienes una reserva para esa hora y ese dia. Elige otra hora disponible.';
       this.confirmation = '';
@@ -1264,7 +1274,7 @@ export class AppComponent {
   }
 
   canCancelCustomerBooking(booking: BookingHistoryItem): boolean {
-    return booking.status === 'CONFIRMED' && this.getBookingDateTime(booking).getTime() > Date.now() + 3 * 60 * 60 * 1000;
+    return booking.status === 'CONFIRMED' && this.getBookingDateTime(booking).getTime() > Date.now() + 2 * 60 * 60 * 1000;
   }
 
   openCustomerCancelModal(booking: BookingHistoryItem): void {
@@ -2408,7 +2418,7 @@ export class AppComponent {
     const dateKey = this.toDateKey(this.selectedDate);
     return !this.isInBookingRange(this.selectedDate)
       || (this.selectedExperience ? this.isSlotFull(this.selectedExperience, dateKey, hour) : false)
-      || this.isSlotPast(dateKey, hour);
+      || this.isSlotWithinBookingCutoff(dateKey, hour);
   }
 
   toggleExperienceHour(hour: string): void {
@@ -2622,6 +2632,10 @@ export class AppComponent {
 
   private isSlotPast(dateKey: string, hour: string): boolean {
     return new Date(`${dateKey}T${hour}:00`) <= new Date();
+  }
+
+  private isSlotWithinBookingCutoff(dateKey: string, hour: string): boolean {
+    return new Date(`${dateKey}T${hour}:00`).getTime() <= Date.now() + 2 * 60 * 60 * 1000;
   }
 
   private ensureSelectedHourAvailable(): void {
