@@ -51,6 +51,14 @@ interface BonusPaymentStatusResponse {
   user: CustomerUser;
 }
 
+interface BonusCheckoutResponse {
+  orderId: string;
+  url: string;
+  signatureVersion: string;
+  merchantParameters: string;
+  signature: string;
+}
+
 interface ExperienceTypeOption {
   value: BookingType;
   label: string;
@@ -278,7 +286,7 @@ export class AppComponent {
     void this.loadRemoteExperiences();
     void this.loadRemoteBlockedDates();
     void this.loadBonusPacks();
-    void this.handleStripeBonusReturn();
+    void this.handleRedsysBonusReturn();
     if (this.view === 'admin' && this.isAdminLoggedIn()) {
       void this.loadRemoteAdminState();
     }
@@ -1201,10 +1209,10 @@ export class AppComponent {
     }
   }
 
-  private async handleStripeBonusReturn(): Promise<void> {
+  private async handleRedsysBonusReturn(): Promise<void> {
     const params = new URLSearchParams(window.location.search);
-    const result = params.get('stripe_bonus');
-    const sessionId = params.get('session_id');
+    const result = params.get('redsys_bonus');
+    const orderId = params.get('order_id');
     if (!result) {
       return;
     }
@@ -1217,18 +1225,18 @@ export class AppComponent {
     }
 
     const token = this.getAuthToken();
-    if (!token || !sessionId) {
+    if (!token || !orderId) {
       this.warning = 'No se pudo confirmar el pago. Inicia sesión y revisa tus sesiones.';
       return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/payments/bonuses/status?sessionId=${encodeURIComponent(sessionId)}`, {
+      const response = await fetch(`${API_URL}/payments/bonuses/status?orderId=${encodeURIComponent(orderId)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
-        this.warning = 'No se pudo confirmar el pago con Stripe.';
+        this.warning = 'No se pudo confirmar el pago con Redsys.';
         return;
       }
 
@@ -1243,7 +1251,7 @@ export class AppComponent {
         this.warning = 'El pago todavía no aparece como completado. Vuelve a intentarlo en unos segundos.';
       }
     } catch {
-      this.warning = 'No se pudo confirmar el pago con Stripe.';
+      this.warning = 'No se pudo confirmar el pago con Redsys.';
     }
   }
 
@@ -1872,23 +1880,44 @@ export class AppComponent {
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) {
         const error = await response.json().catch(() => null);
-        this.warning = error?.error || 'No se pudo iniciar el pago con Stripe.';
+        this.warning = error?.error || 'No se pudo iniciar el pago con Redsys.';
         this.isBonusCheckoutInProgress = false;
         return;
       }
 
-      const checkout = await response.json();
-      if (!checkout.url) {
-        this.warning = 'Stripe no devolvió una página de pago.';
+      const checkout: BonusCheckoutResponse = await response.json();
+      if (!checkout.url || !checkout.signatureVersion || !checkout.merchantParameters || !checkout.signature) {
+        this.warning = 'Redsys no devolvió los datos de pago.';
         this.isBonusCheckoutInProgress = false;
         return;
       }
 
-      window.location.href = checkout.url;
+      this.submitRedsysForm(checkout);
     } catch {
-      this.warning = 'No se pudo conectar con Stripe.';
+      this.warning = 'No se pudo conectar con Redsys.';
       this.isBonusCheckoutInProgress = false;
     }
+  }
+
+  private submitRedsysForm(checkout: BonusCheckoutResponse): void {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = checkout.url;
+
+    [
+      ['Ds_SignatureVersion', checkout.signatureVersion],
+      ['Ds_MerchantParameters', checkout.merchantParameters],
+      ['Ds_Signature', checkout.signature]
+    ].forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
   }
 
   setAdminTab(tab: AdminTab): void {
