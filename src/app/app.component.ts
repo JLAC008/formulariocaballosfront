@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 type BookingType = 'lessons' | 'routes';
@@ -166,7 +166,7 @@ const PASSWORD_PATTERN = /^(?=.*[a-záéíóúüñ])(?=.*[A-ZÁÉÍÓÚÜÑ])(?=
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
+export class AppComponent implements OnDestroy {
   readonly navItems = [
     { label: 'Nuestra escuela', url: 'https://martinezluna.es/nuestra-escuela/' },
     { label: 'Consultoría', url: 'https://martinezluna.es/reservar-cita/' },
@@ -278,6 +278,8 @@ export class AppComponent {
   adminUserError = '';
   adminUserNotice = '';
   adminUserInProgress = false;
+  private adminRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  private adminStateRefreshInProgress = false;
 
   constructor() {
     this.clearLegacyAuthStorage();
@@ -289,7 +291,12 @@ export class AppComponent {
     void this.handleRedsysBonusReturn();
     if (this.view === 'admin' && this.isAdminLoggedIn()) {
       void this.loadRemoteAdminState();
+      this.startAdminAutoRefresh();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.stopAdminAutoRefresh();
   }
 
   get currentUser(): CustomerUser | null {
@@ -700,6 +707,7 @@ export class AppComponent {
 
   showClient(): void {
     this.view = 'client';
+    this.stopAdminAutoRefresh();
     this.closeAccountMenu();
     window.history.replaceState({}, '', '/');
     void this.loadRemoteCurrentUser();
@@ -707,6 +715,7 @@ export class AppComponent {
 
   showLogin(mode: AuthMode = 'login'): void {
     this.view = 'login';
+    this.stopAdminAutoRefresh();
     this.authMode = mode;
     this.authError = '';
     this.authNotice = '';
@@ -725,6 +734,7 @@ export class AppComponent {
     this.closeAccountMenu();
     window.history.replaceState({}, '', '/admin');
     void this.loadRemoteAdminState();
+    this.startAdminAutoRefresh();
   }
 
   setAuthMode(mode: AuthMode): void {
@@ -1258,7 +1268,9 @@ export class AppComponent {
   private async loadRemoteAdminState(): Promise<void> {
     const token = this.getAuthToken();
     if (!token) return;
+    if (this.adminStateRefreshInProgress) return;
     try {
+      this.adminStateRefreshInProgress = true;
       const response = await fetch(`${API_URL}/state`, { headers: { Authorization: `Bearer ${token}` } });
       if (this.handleExpiredSession(response)) return;
       if (!response.ok) return;
@@ -1267,7 +1279,30 @@ export class AppComponent {
       await this.loadAdminBonusPacks();
     } catch {
       // Keep cached admin data as a temporary fallback.
+    } finally {
+      this.adminStateRefreshInProgress = false;
     }
+  }
+
+  private startAdminAutoRefresh(): void {
+    if (this.adminRefreshTimer) {
+      return;
+    }
+
+    this.adminRefreshTimer = setInterval(() => {
+      if (this.view === 'admin' && this.isAdminLoggedIn()) {
+        void this.loadRemoteAdminState();
+      }
+    }, 10000);
+  }
+
+  private stopAdminAutoRefresh(): void {
+    if (!this.adminRefreshTimer) {
+      return;
+    }
+
+    clearInterval(this.adminRefreshTimer);
+    this.adminRefreshTimer = null;
   }
 
   private toBookingHistoryItem(item: any): BookingHistoryItem {
@@ -2543,6 +2578,7 @@ export class AppComponent {
     this.warning = '';
     this.confirmation = '';
     this.isBonusCheckoutInProgress = false;
+    this.stopAdminAutoRefresh();
     this.imageUploadInProgress = false;
     this.profileInProgress = false;
     this.passwordInProgress = false;
