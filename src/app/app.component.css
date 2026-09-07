@@ -2135,6 +2135,12 @@ dd {
   min-height: 41px;
 }
 
+.admin-user-verified {
+  align-items: center !important;
+  display: flex !important;
+  min-height: 41px;
+}
+
 .bonus-pack-admin-grid {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }

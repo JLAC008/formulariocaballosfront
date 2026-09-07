@@ -1079,6 +1079,10 @@
             {{ editingAdminUser ? 'Sesiones' : 'Sesiones iniciales' }}
             <input type="number" name="adminUserSessions" [(ngModel)]="adminUserForm.sessions" min="0" step="1">
           </label>
+          <label class="check-line admin-user-verified">
+            <input type="checkbox" name="adminUserEmailVerified" [(ngModel)]="adminUserForm.emailVerified">
+            Correo verificado
+          </label>
           <div class="delete-modal-actions modal-form-actions">
             <button class="history-action" type="button" (click)="closeAdminUserModal()">Cancelar</button>
             <button class="pay-button" type="submit" [disabled]="adminUserInProgress">
