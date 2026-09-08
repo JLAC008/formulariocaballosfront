@@ -383,11 +383,11 @@
         <h2 id="profile-modal-title">Mi perfil</h2>
         <form class="profile-form" (ngSubmit)="saveProfile()">
           <label>
-            Nombre
+            Nombre alumno
             <input type="text" name="profileFirstName" [(ngModel)]="profileForm.firstName" autocomplete="given-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
           </label>
           <label>
-            Apellidos
+            Apellidos alumno
             <input type="text" name="profileLastName" [(ngModel)]="profileForm.lastName" autocomplete="family-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
           </label>
           <label>
@@ -444,11 +444,11 @@
 
       <form class="auth-form" (ngSubmit)="authMode === 'register' ? register() : authMode === 'forgot' ? requestPasswordReset() : authMode === 'reset' ? submitPasswordReset() : login()">
         <label *ngIf="authMode === 'register'">
-           Nombre
+           Nombre alumno
            <input type="text" name="registerName" [(ngModel)]="registerName" autocomplete="given-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
          </label>
          <label *ngIf="authMode === 'register'">
-           Apellidos
+           Apellidos alumno
            <input type="text" name="registerLastName" [(ngModel)]="registerLastName" autocomplete="family-name" required minlength="2" maxlength="80" pattern="[A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+([ '-][A-Za-zÁÉÍÓÚÜáéíóúüÑñ]+)*">
          </label>
         <label *ngIf="authMode === 'register'">
@@ -1048,11 +1048,11 @@
         <h2 id="admin-user-modal-title">{{ editingAdminUser ? 'Editar usuario' : 'Crear usuario' }}</h2>
         <form class="admin-user-form modal-user-form" (ngSubmit)="createAdminManagedUser()">
           <label>
-            Nombre
+            Nombre alumno
             <input type="text" name="adminUserFirstName" [(ngModel)]="adminUserForm.firstName" required>
           </label>
           <label>
-            Apellidos
+            Apellidos alumno
             <input type="text" name="adminUserLastName" [(ngModel)]="adminUserForm.lastName" required>
           </label>
           <label>
