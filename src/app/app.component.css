@@ -1591,13 +1591,6 @@ dd {
   gap: 2px;
 }
 
-.admin-user-verification-field small {
-  color: #867c73;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.35;
-}
-
 .table-top-actions {
   display: flex;
   justify-content: flex-end;

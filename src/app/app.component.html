@@ -1081,10 +1081,7 @@
           </label>
           <label class="admin-user-verification-field" *ngIf="editingAdminUser">
             <input type="checkbox" name="adminUserEmailVerified" [(ngModel)]="adminUserForm.emailVerified">
-            <span>
-              Correo verificado
-              <small>Actívalo para permitir que esta persona inicie sesión sin verificar el correo.</small>
-            </span>
+            <span>Correo verificado</span>
           </label>
           <div class="delete-modal-actions modal-form-actions">
             <button class="history-action" type="button" (click)="closeAdminUserModal()">Cancelar</button>
