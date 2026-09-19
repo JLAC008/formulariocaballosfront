@@ -80,6 +80,7 @@ interface AdminUserForm {
   password: string;
   role: 'USER' | 'ADMIN';
   sessions: number;
+  emailVerified: boolean;
 }
 
 interface ProfileForm {
@@ -2270,7 +2271,8 @@ export class AppComponent {
       email: user.email || '',
       password: '',
       role: user.role === 'ADMIN' ? 'ADMIN' : 'USER',
-      sessions: Math.max(0, Number(user.bonuses || 0))
+      sessions: Math.max(0, Number(user.bonuses || 0)),
+      emailVerified: user.emailVerified === true
     };
     this.adminUserError = '';
     this.adminUserNotice = '';
@@ -2344,7 +2346,8 @@ export class AppComponent {
           password,
           role: this.adminUserForm.role,
           sessions,
-          active: true
+          active: true,
+          ...(isEditing ? { emailVerified: this.adminUserForm.emailVerified } : {})
         })
       });
 
@@ -3150,7 +3153,8 @@ export class AppComponent {
       email: '',
       password: '',
       role: 'USER',
-      sessions: 0
+      sessions: 0,
+      emailVerified: true
     };
   }
 

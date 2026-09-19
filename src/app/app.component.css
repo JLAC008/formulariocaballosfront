@@ -1569,6 +1569,35 @@ dd {
   grid-column: 1 / -1;
 }
 
+.admin-user-form .admin-user-verification-field {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+
+.admin-user-form .admin-user-verification-field input[type="checkbox"] {
+  accent-color: #111;
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  width: 18px;
+}
+
+.admin-user-verification-field span {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-user-verification-field small {
+  color: #867c73;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
 .table-top-actions {
   display: flex;
   justify-content: flex-end;
