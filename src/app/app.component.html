@@ -215,6 +215,22 @@
       </section>
     </div>
 
+    <div class="modal-backdrop" *ngIf="isManualBonusPaymentModalOpen">
+      <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="manual-bonus-payment-modal-title" (click)="$event.stopPropagation()">
+        <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeManualBonusPaymentModal()">x</button>
+        <p class="eyebrow modal-eyebrow">Compra de bonos</p>
+        <h2 id="manual-bonus-payment-modal-title">Pago por Bizum</h2>
+        <div class="manual-bonus-payment-copy">
+          <p>Para adquirir tu <strong>bono de 10 clases</strong>, realiza un Bizum de <strong>280 €</strong> al número <strong>618 303 438</strong>.</p>
+          <p><strong>Recuerda indicar el nombre del alumno en el concepto del pago.</strong></p>
+          <p>Una vez comprobado el pago, el administrador añadirá manualmente a tu cuenta <strong>1 bono con 10 clases</strong>.</p>
+          <p>Recibirás una notificación en el correo electrónico con el que te registraste cuando esté disponible.</p>
+          <p>¡Muchas gracias!</p>
+        </div>
+        <button class="pay-button modal-action" type="button" (click)="closeManualBonusPaymentModal()">Entendido</button>
+      </section>
+    </div>
+
     <div class="modal-backdrop" *ngIf="isMissingExperienceModalOpen">
       <section class="reservation-modal" role="dialog" aria-modal="true" aria-labelledby="missing-experience-modal-title" (click)="$event.stopPropagation()">
         <button class="modal-close" type="button" aria-label="Cerrar modal" (click)="closeMissingExperienceModal()">x</button>

@@ -1010,6 +1010,23 @@ dd {
   margin: 0 0 18px;
 }
 
+.manual-bonus-payment-copy {
+  color: #6f675f;
+  display: grid;
+  font-size: 14px;
+  gap: 12px;
+  line-height: 1.55;
+  margin: 0 0 20px;
+}
+
+.manual-bonus-payment-copy p {
+  margin: 0;
+}
+
+.manual-bonus-payment-copy strong {
+  color: #2f261f;
+}
+
 .bonus-pack-grid {
   display: grid;
   gap: 10px;

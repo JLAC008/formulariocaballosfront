@@ -209,6 +209,7 @@ export class AppComponent {
   selectedHour = '18:00';
   currentUserId: number | null = this.getStoredCustomerId();
   isBonusModalOpen = false;
+  isManualBonusPaymentModalOpen = false;
   isMissingExperienceModalOpen = false;
   isReservationModalOpen = false;
   isHourNoticeModalOpen = false;
@@ -263,6 +264,7 @@ export class AppComponent {
   imageUploadError = '';
   imageUploadInProgress = false;
   isBonusCheckoutInProgress = false;
+  paymentGatewayEnabled: boolean | null = null;
   bonusPackForm: BonusPack = this.blankBonusPack();
   editingBonusPack: BonusPack | null = null;
   bonusPackError = '';
@@ -279,6 +281,7 @@ export class AppComponent {
     void this.loadRemoteExperiences();
     void this.loadRemoteBlockedDates();
     void this.loadBonusPacks();
+    void this.loadPaymentConfig();
     void this.handleStripeBonusReturn();
     if (this.view === 'admin' && this.isAdminLoggedIn()) {
       void this.loadRemoteAdminState();
@@ -1571,20 +1574,32 @@ export class AppComponent {
       : '';
   }
 
-  openBonusModal(): void {
+  async openBonusModal(): Promise<void> {
     if (!this.currentUser) {
       this.warning = 'Para comprar sesiones necesitas iniciar sesión o crear una cuenta.';
       this.showLogin('login');
       return;
     }
 
+    if (this.paymentGatewayEnabled === null) {
+      await this.loadPaymentConfig();
+    }
+
     this.closeAllModals();
-    this.isBonusModalOpen = true;
+    if (this.paymentGatewayEnabled === false) {
+      this.isManualBonusPaymentModalOpen = true;
+    } else {
+      this.isBonusModalOpen = true;
+    }
     this.confirmation = '';
   }
 
   closeBonusModal(): void {
     this.isBonusModalOpen = false;
+  }
+
+  closeManualBonusPaymentModal(): void {
+    this.isManualBonusPaymentModalOpen = false;
   }
 
   openMissingExperienceModal(): void {
@@ -1911,6 +1926,20 @@ export class AppComponent {
       }
     } catch {
       // Keep the modal usable only when the API returns packs.
+    }
+  }
+
+  async loadPaymentConfig(): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/payments/bonuses/config`);
+      if (!response.ok) {
+        this.paymentGatewayEnabled = true;
+        return;
+      }
+      const config = await response.json();
+      this.paymentGatewayEnabled = config?.gatewayEnabled !== false;
+    } catch {
+      this.paymentGatewayEnabled = true;
     }
   }
 
@@ -2527,6 +2556,7 @@ export class AppComponent {
 
   private closeAllModals(): void {
     this.isBonusModalOpen = false;
+    this.isManualBonusPaymentModalOpen = false;
     this.isMissingExperienceModalOpen = false;
     this.isReservationModalOpen = false;
     this.isHourNoticeModalOpen = false;
