@@ -1168,6 +1168,12 @@ export class AppComponent {
     }).format(new Date(`${dateKey}T00:00:00`));
   }
 
+  changeAdminDate(days: number): void {
+    const date = new Date(`${this.adminDate}T00:00:00`);
+    date.setDate(date.getDate() + days);
+    this.adminDate = this.toDateKey(date);
+  }
+
   isDateBlocked(date: Date): boolean {
     return this.blockedDates.includes(this.toDateKey(date));
   }

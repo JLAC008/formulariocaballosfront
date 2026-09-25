@@ -553,7 +553,11 @@
           <h2>Agenda diaria</h2>
           <p>Consulta la ocupación del día y gestiona las experiencias programadas.</p>
         </div>
-        <input type="date" [(ngModel)]="adminDate">
+        <div class="admin-date-controls">
+          <button type="button" class="admin-date-nav" aria-label="Día anterior" title="Día anterior" (click)="changeAdminDate(-1)">&larr;</button>
+          <input type="date" [(ngModel)]="adminDate">
+          <button type="button" class="admin-date-nav" aria-label="Día siguiente" title="Día siguiente" (click)="changeAdminDate(1)">&rarr;</button>
+        </div>
       </div>
 
       <div class="schedule-board">
