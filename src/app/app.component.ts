@@ -648,7 +648,9 @@ export class AppComponent {
   }
 
   get pendingLessonsToday(): number {
-    return this.adminDayReservations.filter((booking) => booking.status === 'CONFIRMED').length;
+    return this.adminDayReservations
+      .filter((booking) => booking.status === 'CONFIRMED')
+      .reduce((sum, booking) => sum + this.getBookingParticipantCount(booking), 0);
   }
 
   get totalUserBonuses(): number {
