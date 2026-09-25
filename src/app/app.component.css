@@ -1536,19 +1536,11 @@ dd {
 }
 
 .admin-date-nav {
-  background: rgba(255, 252, 247, 0.86);
+  background: transparent;
   border: 1px solid var(--line);
-  color: #62564c;
-  cursor: pointer;
-  font-size: 22px;
-  height: 36px;
-  line-height: 1;
-  padding: 0 10px;
-}
-
-.admin-date-nav:hover {
-  border-color: var(--gold);
-  color: var(--gold-deep);
+  color: #5f4a3d;
+  min-height: 36px;
+  width: 40px;
 }
 
 .user-filter-grid {
