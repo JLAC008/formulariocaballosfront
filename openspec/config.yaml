@@ -1,0 +1,29 @@
+schema: spec-driven
+context: 'Language: es
+
+  All artifacts must be written in es.
+
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+
+  Antes de generar artefactos o implementar, lee AGENTS.md y docs/deployment.md.
+
+  docs/deployment.md es la fuente del mapa de entornos y ramas de autodespliegue.
+
+  Verifica allí la configuración específica de Dokploy, Docker Compose y PostgreSQL.
+
+  Los datos pendientes no son hechos y no deben rellenarse por suposición.
+
+  No incluyas secretos en los artefactos.
+
+  Panel de Dokploy: https://dokploy.walerike.com/.
+
+  '
+rules:
+  proposal:
+  - Si aplica, indica impacto en despliegue, configuración o datos.
+  design:
+  - Si afecta Compose o variables, identifica los cambios y dónde se configuran.
+  - Si afecta PostgreSQL, define ejecución de migraciones, compatibilidad y recuperación.
+  tasks:
+  - Añade comprobaciones relevantes antes de publicar; separa implementación, publicación autorizada y verificación del despliegue.
