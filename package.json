@@ -26,6 +26,9 @@
     "typescript": "~5.8.0"
   },
   "overrides": {
-    "webpack-dev-middleware": "7.4.5"
+    "webpack-dev-middleware": "7.4.5",
+    "sockjs": {
+      "uuid": "11.1.1"
+    }
   }
 }
